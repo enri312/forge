@@ -354,6 +354,7 @@ dependencies = [
  "colored",
  "console",
  "ctrlc",
+ "dirs",
  "forge-core",
  "forge-deps",
  "forge-langs",
@@ -362,6 +363,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "walkdir",
 ]
 
 [[package]]

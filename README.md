@@ -56,14 +56,13 @@ cargo install --path crates/forge-cli
 ### 2. Crear un Proyecto
 
 ```bash
-# Proyecto Java
+# Crear proyecto en carpeta nueva
+forge new mi-app -l java
+forge new mi-app -l kotlin
+forge new mi-app -l python
+
+# O inicializar en el directorio actual
 forge init java
-
-# Proyecto Kotlin
-forge init kotlin
-
-# Proyecto Python
-forge init python
 ```
 
 ### 3. Compilar y Ejecutar
@@ -73,6 +72,12 @@ forge build    # Compilar
 forge run      # Compilar y ejecutar
 forge test     # Ejecutar tests
 forge clean    # Limpiar artefactos
+```
+
+### 4. Verificar tu Sistema
+
+```bash
+forge doctor   # Diagnóstico completo del sistema
 ```
 
 ---
@@ -97,6 +102,10 @@ main-class = "com.ejemplo.Main"
 [dependencies]
 "com.google.guava:guava" = "33.0.0-jre"
 "org.slf4j:slf4j-api" = "2.0.9"
+
+[tasks.lint]
+command = "echo Linting..."
+description = "Verificar estilo de código"
 ```
 
 ### Proyecto Kotlin
@@ -135,17 +144,37 @@ main-script = "main.py"
 
 ---
 
-## 📦 Comandos Disponibles
+## 📦 Comandos Disponibles (15)
+
+### Esenciales
 
 | Comando | Descripción |
 |---|---|
-| `forge init <lang>` | 🆕 Crear nuevo proyecto (java/kotlin/python) |
+| `forge init <lang>` | 🆕 Inicializar proyecto en directorio actual |
+| `forge new <nombre> -l <lang>` | 📁 Crear proyecto en carpeta nueva |
 | `forge build` | 🔨 Compilar el proyecto |
 | `forge run` | 🚀 Compilar y ejecutar |
 | `forge test` | 🧪 Ejecutar tests |
 | `forge clean` | 🧹 Limpiar artefactos y caché |
 | `forge deps` | 📦 Resolver dependencias |
-| `forge info` | ℹ️ Mostrar información del proyecto |
+
+### Desarrollo
+
+| Comando | Descripción |
+|---|---|
+| `forge watch` | 👁️ Auto-rebuild al detectar cambios en código |
+| `forge task <nombre>` | ⚙️ Ejecutar tarea personalizada del `forge.toml` |
+| `forge bench` | ⏱️ Benchmark: medir tiempos de compilación |
+| `forge package` | 📦 Empaquetar proyecto para distribución |
+
+### Información
+
+| Comando | Descripción |
+|---|---|
+| `forge info` | ℹ️ Info del proyecto + herramientas del sistema |
+| `forge stats` | 📊 Estadísticas: archivos, líneas, tamaño |
+| `forge doctor` | 🩺 Diagnóstico completo del sistema |
+| `forge completions <shell>` | 🐚 Autocompletado para bash/zsh/fish/PowerShell |
 
 ### Opciones Globales
 
@@ -175,8 +204,13 @@ forge/
 - **⚡ Ejecución Paralela**: Las tareas sin dependencias se ejecutan simultáneamente usando un grafo DAG
 - **💾 Caché Incremental**: Solo recompila archivos que han cambiado (hashing SHA-256)
 - **📦 Dependencias Automáticas**: Descarga JARs de Maven Central y paquetes de PyPI
+- **👁️ Watch Mode**: Vigila cambios y recompila automáticamente usando file watchers nativos
+- **🩺 System Doctor**: Diagnóstico completo con sugerencias de instalación
+- **📊 Project Stats**: Conteo de archivos, líneas de código y tamaño
+- **⏱️ Benchmarking**: Mide y compara tiempos de compilación
 - **🎨 UX Moderna**: Barras de progreso, colores y mensajes descriptivos
-- **🔌 Extensible**: Arquitectura modular con traits para agregar nuevos lenguajes
+- **� Shell Completions**: Autocompletado para bash, zsh, fish y PowerShell
+- **�🔌 Extensible**: Arquitectura modular con traits para agregar nuevos lenguajes
 
 ---
 
@@ -190,30 +224,29 @@ forge/
 - 🧪 **Test runners**: JUnit para Java/Kotlin, pytest mejorado
 - 📦 **Plugin system**: Sistema de plugins dinámicos
 - 🌐 **Caché remoto**: Compartir builds entre equipos
-- 📊 **Build analytics**: Métricas y reportes de rendimiento
-- 🐳 **Docker support**: Builds en contenedores
+-  **Docker support**: Builds en contenedores
 - 📝 **IDE plugins**: Integración con VS Code, IntelliJ
 
 ---
 
 ## 📋 Roadmap
 
-- [x] **v0.1** — Estructura base y CLI
-- [x] **v0.1** — Compilación Java (javac)
-- [x] **v0.1** — Compilación Kotlin (kotlinc)
-- [x] **v0.1** — Soporte Python (venv/pip)
-- [x] **v0.1** — Resolución de dependencias Maven
-- [x] **v0.1** — Caché incremental
+- [x] **v0.1.0** — Estructura base, CLI y motor core
+- [x] **v0.1.0** — Compilación Java, Kotlin y Python
+- [x] **v0.1.0** — Resolución de dependencias (Maven Central, PyPI)
+- [x] **v0.1.0** — Caché incremental con SHA-256
+- [x] **v0.1.1** — Watch mode (recompilación automática)
+- [x] **v0.1.1** — Shell completions (bash, zsh, fish, PowerShell)
+- [x] **v0.1.1** — JSON Schema para `forge.toml`
+- [x] **v0.1.1** — `forge doctor`, `forge stats`, `forge bench`
+- [x] **v0.1.1** — `forge new`, `forge task`, `forge package`
+- [x] **v0.1.1** — GitHub Actions CI (Linux, Windows, macOS)
 - [ ] **v0.2** — Plugin system
-- [ ] **v0.2** — Test runners nativos
+- [ ] **v0.2** — Test runners nativos (JUnit, pytest)
 - [ ] **v0.3** — Caché remoto distribuido
 - [ ] **v0.3** — Soporte multi-módulo
-- [ ] **v0.4** — Watch mode (recompilación automática)
-- [ ] **v0.4** — Autocompletado para shell (bash, zsh, fish, PowerShell)
-- [ ] **v0.5** — JSON Schema para forge.toml (autocompletado en IDEs)
-- [ ] **v0.5** — Plugin VS Code con syntax highlighting
-- [ ] **v0.6** — Plugin IntelliJ IDEA
-- [ ] **v0.6** — Language Server Protocol (LSP) para forge.toml
+- [ ] **v0.4** — Plugin VS Code con syntax highlighting
+- [ ] **v0.5** — Language Server Protocol (LSP) para `forge.toml`
 
 ---
 
@@ -225,8 +258,10 @@ Este proyecto está bajo la licencia **MIT**. Ver [LICENSE](LICENSE) para más d
 
 <div align="center">
 
-**Hecho con 🔥 y Rust 🦀**
+**Hecho con 🔥 y Rust 🦀 por [SkyShoot](https://github.com/enri312)**
 
 *FORGE es un proyecto de código abierto. ¡Únete a la fragua!*
+
+🌐 [github.com/enri312/forge](https://github.com/enri312/forge)
 
 </div>

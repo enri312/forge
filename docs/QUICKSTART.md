@@ -11,8 +11,10 @@ Esta guía te lleva paso a paso desde la instalación hasta tu primer build con 
 
 ### Según el lenguaje que uses
 - **Java 17-25** — Para proyectos Java ([Descargar](https://adoptium.net/))
-- **Kotlin 2.1+** — Para proyectos Kotlin ([Descargar](https://kotlinlang.org/docs/command-line.html))
+- **Kotlin 2.1+** — Para proyectos Kotlin ([Descargar](https://github.com/JetBrains/kotlin/releases)) o disponible con IntelliJ IDEA
 - **Python 3.10-3.14** — Para proyectos Python ([Descargar](https://python.org))
+
+> **💡 Tip**: Ejecuta `forge doctor` para verificar qué herramientas tienes instaladas y cuáles faltan.
 
 ---
 
@@ -28,6 +30,9 @@ cargo install --path crates/forge-cli
 
 # Verificar la instalación
 forge --version
+
+# Diagnosticar el sistema
+forge doctor
 ```
 
 ---
@@ -35,28 +40,9 @@ forge --version
 ## 3. Tu Primer Proyecto — Java
 
 ```bash
-# Crear directorio del proyecto
-mkdir mi-primer-proyecto
-cd mi-primer-proyecto
-
-# Inicializar con FORGE
-forge init java
-```
-
-Esto crea:
-```
-mi-primer-proyecto/
-├── forge.toml          ← Configuración del proyecto
-├── .gitignore          ← Archivos a ignorar
-└── src/main/java/
-    └── Main.java       ← Tu código de ejemplo
-```
-
-### Compilar y Ejecutar
-
-```bash
-# Solo compilar
-forge build
+# Crear proyecto en carpeta nueva
+forge new mi-app-java -l java
+cd mi-app-java
 
 # Compilar y ejecutar
 forge run
@@ -70,19 +56,27 @@ Deberías ver:
 
 ---
 
-## 4. Tu Primer Proyecto — Python
+## 4. Tu Primer Proyecto — Kotlin
 
 ```bash
-mkdir mi-script-python
-cd mi-script-python
-
-forge init python
+forge new mi-app-kotlin -l kotlin
+cd mi-app-kotlin
 forge run
 ```
 
 ---
 
-## 5. Agregar Dependencias
+## 5. Tu Primer Proyecto — Python
+
+```bash
+forge new mi-script -l python
+cd mi-script
+forge run
+```
+
+---
+
+## 6. Agregar Dependencias
 
 ### Java (Maven Central)
 Edita `forge.toml`:
@@ -108,40 +102,115 @@ forge build   # Crea venv e instala automáticamente
 
 ---
 
-## 6. Personalizar Tareas
+## 7. Watch Mode (Auto-Rebuild)
 
-Puedes definir tareas personalizadas en `forge.toml`:
+Mientras desarrollas, FORGE puede vigilar tus archivos y recompilar automáticamente:
 
-```toml
-[tasks.lint]
-command = "echo Ejecutando linter..."
-description = "Verificar estilo de código"
-
-[tasks.deploy]
-command = "echo Desplegando aplicación..."
-depends-on = ["build"]
-description = "Desplegar a producción"
+```bash
+forge watch
+# Edita tu código → FORGE detecta el cambio → Recompila automáticamente
+# Ctrl+C para detener
 ```
 
 ---
 
-## 7. Comandos Útiles
+## 8. Tareas Personalizadas
+
+Define tareas reutilizables en `forge.toml`:
+
+```toml
+[tasks.lint]
+command = "echo Verificando estilo..."
+description = "Verificar estilo de código"
+
+[tasks.hello]
+command = "echo ¡Hola desde FORGE!"
+```
 
 ```bash
-forge info     # Ver información del proyecto
-forge clean    # Limpiar builds anteriores
-forge --help   # Ver todos los comandos
+forge task lint
+forge task hello
+```
+
+---
+
+## 9. Empaquetar para Distribución
+
+```bash
+forge package   # Empaqueta en dist/
+```
+
+Para Java/Kotlin: copia el JAR a `dist/`.
+Para Python: copia fuente + `requirements.txt` a `dist/`.
+
+---
+
+## 10. Benchmark de Compilación
+
+```bash
+forge bench    # 3 rondas clean+build con estadísticas
+```
+
+---
+
+## 11. Información y Estadísticas
+
+```bash
+forge info     # Info del proyecto + versiones del sistema
+forge stats    # Archivos, líneas de código, tamaño
+forge doctor   # Diagnóstico completo + sugerencias de instalación
+```
+
+---
+
+## 12. Autocompletado de Shell
+
+```bash
+# PowerShell
+forge completions powershell >> $PROFILE
+
+# Bash
+forge completions bash >> ~/.bashrc
+
+# Zsh
+forge completions zsh >> ~/.zshrc
+
+# Fish
+forge completions fish > ~/.config/fish/completions/forge.fish
+```
+
+---
+
+## 13. Todos los Comandos
+
+```bash
+forge init <lang>              # Inicializar en directorio actual
+forge new <nombre> -l <lang>   # Crear proyecto en carpeta nueva
+forge build                    # Compilar
+forge run                      # Compilar + ejecutar
+forge test                     # Ejecutar tests
+forge clean                    # Limpiar artefactos
+forge deps                     # Resolver dependencias
+forge watch                    # Auto-rebuild al detectar cambios
+forge task <nombre>            # Ejecutar tarea personalizada
+forge info                     # Info del proyecto
+forge stats                    # Estadísticas del proyecto
+forge doctor                   # Diagnóstico del sistema
+forge bench                    # Benchmark de compilación
+forge package                  # Empaquetar para distribución
+forge completions <shell>      # Generar autocompletado
 ```
 
 ---
 
 ## ¿Problemas?
 
-- `javac no encontrado` → Asegúrate de que Java está en tu PATH
-- `kotlinc no encontrado` → Instala Kotlin y agrégalo al PATH
-- `python no encontrado` → Instala Python 3.10+ y agrégalo al PATH
-- Abre un issue en GitHub si encuentras un bug 🐛
+- Ejecuta `forge doctor` para diagnóstico automático
+- `javac no encontrado` → Instala JDK desde [adoptium.net](https://adoptium.net)
+- `kotlinc no encontrado` → Descarga desde [Kotlin releases](https://github.com/JetBrains/kotlin/releases) o usa IntelliJ IDEA
+- `python no encontrado` → Instala Python 3.10+ desde [python.org](https://python.org)
+- Abre un [issue en GitHub](https://github.com/enri312/forge/issues) si encuentras un bug 🐛
 
 ---
 
-🔥 ¡Felicidades! Ya estás usando FORGE. Explora la [documentación completa](README.md) para más detalles.
+🔥 ¡Felicidades! Ya estás usando FORGE. Explora la [documentación completa](../README.md) para más detalles.
