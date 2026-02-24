@@ -42,8 +42,6 @@ jobs:
 
       - name: Build Nativo Optimizada (Release)
         run: cargo build --release --target ${{ matrix.target }} --package cyrce-forge-cli
-        env:
-          RUSTFLAGS: "-C target-cpu=native"
 
       # Empaquetado tar.gz para UNIX (Linux/Mac)
       - name: Empaquetar artefactos (UNIX)
