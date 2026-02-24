@@ -39,7 +39,7 @@ jobs:
           targets: ${{ matrix.target }}
 
       - name: Build Nativo Optimizada (Release)
-        run: cargo build --release --target ${{ matrix.target }} --package forge-cli
+        run: cargo build --release --target ${{ matrix.target }} --package cyrce-forge-cli
         env:
           RUSTFLAGS: "-C target-cpu=native"
 
