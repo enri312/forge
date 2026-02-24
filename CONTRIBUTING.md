@@ -48,7 +48,14 @@ forge/
 │
 ├── crates/
 │   ├── forge-cli/       ← CLI (punto de entrada)
-│   │   └── src/main.rs
+│   │   └── src/
+│   │       ├── main.rs      ← Funciones Core (build, run, test)
+│   │       ├── ide.rs       ← Integración IDE (VS Code, IntelliJ)
+│   │       ├── hooks.rs     ← Ejecución de pre/post actions 
+│   │       ├── add.rs       ← Inyector de TOML (forge add)
+│   │       ├── tree.rs      ← UI de dependencias (forge tree)
+│   │       ├── fmt.rs       ← Formateadores
+│   │       └── lint.rs      ← Linter estático
 │   │
 │   ├── forge-core/      ← Motor principal
 │   │   └── src/
@@ -141,23 +148,22 @@ test: agregar tests para caché incremental
 ## 🎯 Áreas donde Necesitamos Ayuda
 
 ### 🟢 Principiante (Good First Issue)
-- Mejorar mensajes de error
-- Agregar más tests
-- Mejorar la documentación
-- Agregar ejemplos
+- Crear nuevas plantillas para `forge new` (Ej. frameworks web, microservicios)
+- Mejorar mensajes de error con sugerencias (`error.rs`)
+- Agregar más tests E2E
+- Mejorar la documentación en The Docs y ejemplos
 
 ### 🟡 Intermedio
-- Nuevo módulo de lenguaje (Go, TypeScript, C++)
-- Test runner integrado (JUnit para Java)
-- Watch mode (recompilación automática al cambiar archivos)
-- Mejor resolución de dependencias transitivas
+- Nuevo módulo para gestionar tareas con Docker
+- Nuevo módulo de lenguaje nativo (Ej. Go, TypeScript, C++, Rust)
+- Soporte para Test Coverage integrado (Jacoco, PyTest-Cov)
+- Implementar la lógica completa de parsing para `forge upgrade`
 
 ### 🔴 Avanzado
-- Sistema de plugins dinámicos
-- Caché remoto distribuido
-- Compilación multi-módulo
-- Compilación cruzada
-- Integración con IDEs (Language Server Protocol)
+- Sistema de plugins dinámicos y Scripts pre/post escritos en Rust
+- Servidor LSP (Language Server Protocol) para validación de TOML en tiempo real
+- Caché remoto y Builds Distribuidos
+- Cross-Compilation (Compilación cruzada) desde Windows Host a Linux Targets
 
 ---
 

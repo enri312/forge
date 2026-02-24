@@ -4,6 +4,7 @@ members = [
     "crates/forge-core",
     "crates/forge-langs",
     "crates/forge-deps",
+    "crates/forge-lsp",
 ]
 resolver = "2"
 
@@ -58,3 +59,6 @@ quick-xml = { version = "0.37", features = ["serialize"] }
 # File watching (watch mode)
 notify = { version = "7.0", features = ["macos_kqueue"] }
 ctrlc = "3.4"
+
+# Language Server Protocol (LSP)
+tower-lsp = "0.20.0"

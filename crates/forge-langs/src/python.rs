@@ -235,7 +235,7 @@ impl PythonModule {
         println!("   {}", "🧪 Ejecutando tests Python...".cyan());
 
         let mut cmd = tokio::process::Command::new(&python);
-        cmd.args(["-m", "pytest", "-v"])
+        cmd.args(["-m", "pytest", "tests/"]) // Opcional pero recomendada
             .current_dir(project_dir)
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit());
@@ -244,7 +244,7 @@ impl PythonModule {
 
         match status {
             Ok(s) if s.success() => {
-                println!("   {}", "✅ Tests pasaron".green());
+                println!("   {}", "✅ Todos los tests pasaron exitosamente!".green());
             }
             Ok(s) => {
                 // Intentar con unittest si pytest no está instalado

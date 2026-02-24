@@ -1,0 +1,47 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad-forge" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fb923c"/>
+      <stop offset="100%" stop-color="#f97316"/>
+    </linearGradient>
+    <linearGradient id="grad-anvil" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#64748b"/>
+      <stop offset="100%" stop-color="#475569"/>
+    </linearGradient>
+    <filter id="glow-forge">
+      <feGaussianBlur stdDeviation="0.8"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Documento/Archivo de fondo -->
+  <path d="M 6,2 L 18,2 L 24,8 L 24,30 L 6,30 Z" fill="#1e293b" stroke="#475569" stroke-width="0.8"/>
+  <path d="M 18,2 L 18,8 L 24,8" fill="#0f172a" stroke="#475569" stroke-width="0.8"/>
+  
+  <!-- Yunque -->
+  <g transform="translate(15, 21)" filter="url(#glow-forge)">
+    <!-- Cuerpo del yunque -->
+    <path d="M -5 -2 L 5 -2 L 6 1 L -6 1 Z" fill="url(#grad-anvil)" stroke="#94a3b8" stroke-width="0.6"/>
+    <!-- Superficie -->
+    <rect x="-4" y="-4" width="8" height="2.5" rx="0.3" fill="#64748b" stroke="#94a3b8" stroke-width="0.5"/>
+    <!-- Cuerno -->
+    <path d="M 5 -3 L 7 -1 L 5 -1 Z" fill="#475569"/>
+    <!-- Base -->
+    <rect x="-5" y="1" width="10" height="1.2" rx="0.3" fill="#334155"/>
+  </g>
+  
+  <!-- Llama -->
+  <g transform="translate(15, 12)" filter="url(#glow-forge)">
+    <path d="M 0 -4 C -1.5 -2 -2 0 -1.5 2 C -1.5 3.5 -0.5 4 0 4 C 0.5 4 1.5 3.5 1.5 2 C 2 0 1.5 -2 0 -4 Z" 
+          fill="url(#grad-forge)" opacity="0.95"/>
+    <path d="M 0 -2 C -0.8 -0.5 -1 0.5 -0.7 2 C -0.7 3 -0.2 3.5 0 3.5 C 0.2 3.5 0.7 3 0.7 2 C 1 0.5 0.8 -0.5 0 -2 Z" 
+          fill="#fbbf24" opacity="0.8"/>
+  </g>
+  
+  <!-- Chispas -->
+  <g filter="url(#glow-forge)" opacity="0.7">
+    <circle cx="12" cy="10" r="0.5" fill="#fbbf24"/>
+    <circle cx="18" cy="9" r="0.4" fill="#fb923c"/>
+    <circle cx="11" cy="14" r="0.4" fill="#fbbf24"/>
+  </g>
+</svg>

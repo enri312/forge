@@ -18,6 +18,10 @@ main-class = "Main"
 # "com.google.guava:guava" = "33.0.0-jre"
 # "org.slf4j:slf4j-api" = "2.0.9"
 
+# Dependencias para Tests
+[test-dependencies]
+"org.junit.jupiter:junit-jupiter-api" = "6.0.3"
+
 # Tareas personalizadas
 [tasks]
 # [tasks.mi-tarea]

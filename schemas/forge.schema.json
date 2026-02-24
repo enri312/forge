@@ -3,12 +3,17 @@
   "title": "FORGE Build Configuration",
   "description": "Esquema de configuración para forge.toml — Build system FORGE",
   "type": "object",
-  "required": ["project"],
+  "required": [
+    "project"
+  ],
   "properties": {
     "project": {
       "type": "object",
       "description": "Metadatos del proyecto",
-      "required": ["name", "lang"],
+      "required": [
+        "name",
+        "lang"
+      ],
       "properties": {
         "name": {
           "type": "string",
@@ -23,7 +28,11 @@
         "lang": {
           "type": "string",
           "description": "Lenguaje principal del proyecto",
-          "enum": ["java", "kotlin", "python"]
+          "enum": [
+            "java",
+            "kotlin",
+            "python"
+          ]
         },
         "description": {
           "type": "string",
@@ -45,11 +54,25 @@
           "description": "Directorio de código fuente Java",
           "default": "src/main/java"
         },
+        "test-source": {
+          "type": "string",
+          "description": "Directorio de código de tests Java",
+          "default": "src/test/java"
+        },
         "target": {
           "type": "string",
           "description": "Versión objetivo del JDK (ej: 17, 21, 25)",
           "default": "17",
-          "enum": ["8", "11", "17", "21", "22", "23", "24", "25"]
+          "enum": [
+            "8",
+            "11",
+            "17",
+            "21",
+            "22",
+            "23",
+            "24",
+            "25"
+          ]
         },
         "main-class": {
           "type": "string",
@@ -103,12 +126,62 @@
         "type": "string"
       }
     },
+    "test-dependencies": {
+      "type": "object",
+      "description": "Dependencias exclusivas para testing (JUnit, Mockito, etc.)",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "hooks": {
+      "type": "object",
+      "description": "Hooks de ciclo de vida que se ejecutan antes/después de build y test",
+      "properties": {
+        "pre-build": {
+          "type": "array",
+          "description": "Comandos a ejecutar ANTES de compilar",
+          "items": {
+            "type": "string"
+          }
+        },
+        "post-build": {
+          "type": "array",
+          "description": "Comandos a ejecutar DESPUÉS de compilar",
+          "items": {
+            "type": "string"
+          }
+        },
+        "pre-test": {
+          "type": "array",
+          "description": "Comandos a ejecutar ANTES de testear",
+          "items": {
+            "type": "string"
+          }
+        },
+        "post-test": {
+          "type": "array",
+          "description": "Comandos a ejecutar DESPUÉS de testear",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "modules": {
+      "type": "array",
+      "description": "Sub-módulos del workspace (multi-módulo). Cada entrada es una ruta relativa a un sub-proyecto con su propio forge.toml",
+      "items": {
+        "type": "string"
+      }
+    },
     "tasks": {
       "type": "object",
       "description": "Tareas personalizadas",
       "additionalProperties": {
         "type": "object",
-        "required": ["command"],
+        "required": [
+          "command"
+        ],
         "properties": {
           "command": {
             "type": "string",

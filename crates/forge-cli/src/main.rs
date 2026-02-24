@@ -5,6 +5,14 @@
 // Usa clap para parseo de argumentos con interfaz moderna y colorida.
 // =============================================================================
 
+mod ide;
+mod hooks;
+mod fmt;
+mod lint;
+mod add;
+mod upgrade;
+mod tree;
+
 use std::path::PathBuf;
 use std::time::Instant;
 
@@ -66,7 +74,11 @@ enum Commands {
     },
 
     /// 🔨 Compilar el proyecto
-    Build,
+    Build {
+        /// Compilar en modo optimizado para producción
+        #[arg(long)]
+        release: bool,
+    },
 
     /// 🚀 Compilar y ejecutar el proyecto
     Run,
@@ -79,6 +91,21 @@ enum Commands {
 
     /// 📦 Descargar y resolver dependencias
     Deps,
+
+    /// ➕ Añadir una dependencia a forge.toml
+    Add {
+        /// Coordenada u offset de paquete (ej: com.google.gson:gson:2.11.0 o flask)
+        dep: String,
+        /// Añadir como dependencia de test
+        #[arg(short, long)]
+        test: bool,
+    },
+
+    /// ⬆️  Actualizar dependencias a versiones más recientes (beta/PyPI only por ahora)
+    Upgrade,
+
+    /// 🌲 Visualizar el árbol de dependencias resueltas
+    Tree,
 
     /// ℹ️  Mostrar información del proyecto
     Info,
@@ -110,6 +137,18 @@ enum Commands {
         #[arg(value_enum)]
         shell: clap_complete::Shell,
     },
+
+    /// 🛠️ Configurar integración con IDE (VS Code, IntelliJ)
+    Ide {
+        /// Editor objetivo: vscode, intellij
+        target: String,
+    },
+
+    /// 🎨 Formatear código fuente (google-java-format, ktlint, black)
+    Fmt,
+
+    /// 🔍 Análisis estático del código (checkstyle, detekt, ruff)
+    Lint,
 }
 
 #[tokio::main]
@@ -149,11 +188,14 @@ async fn main() -> anyhow::Result<()> {
     let result = match cli.command {
         Commands::Init { lang } => cmd_init(&project_dir, &lang).await,
         Commands::New { name, lang } => cmd_new(&project_dir, &name, &lang).await,
-        Commands::Build => cmd_build(&project_dir, cli.verbose).await,
+        Commands::Build { release } => cmd_build(&project_dir, cli.verbose, release).await,
         Commands::Run => cmd_run(&project_dir, cli.verbose).await,
         Commands::Test => cmd_test(&project_dir, cli.verbose).await,
         Commands::Clean => cmd_clean(&project_dir).await,
         Commands::Deps => cmd_deps(&project_dir).await,
+        Commands::Add { dep, test } => add::cmd_add(&project_dir, &dep, test).await,
+        Commands::Upgrade => upgrade::cmd_upgrade(&project_dir).await,
+        Commands::Tree => tree::cmd_tree(&project_dir).await,
         Commands::Info => cmd_info(&project_dir).await,
         Commands::Watch => cmd_watch(&project_dir).await,
         Commands::Task { name } => cmd_task(&project_dir, &name).await,
@@ -161,6 +203,9 @@ async fn main() -> anyhow::Result<()> {
         Commands::Stats => cmd_stats(&project_dir).await,
         Commands::Bench => cmd_bench(&project_dir, cli.verbose).await,
         Commands::Package => cmd_package(&project_dir).await,
+        Commands::Ide { target } => ide::cmd_ide(&project_dir, &target).await,
+        Commands::Fmt => fmt::cmd_fmt(&project_dir).await,
+        Commands::Lint => lint::cmd_lint(&project_dir).await,
         Commands::Completions { shell } => {
             let mut cmd = Cli::command();
             clap_complete::generate(shell, &mut cmd, "forge", &mut std::io::stdout());
@@ -170,10 +215,17 @@ async fn main() -> anyhow::Result<()> {
 
     if let Err(e) = &result {
         eprintln!("\n{} {}", "❌ Error:".red().bold(), e);
-        eprintln!(
-            "{}",
-            "   Usa 'forge --help' para ver los comandos disponibles.".dimmed()
-        );
+
+        // Intentar extraer sugerencia contextual si es un ForgeError
+        if let Some(forge_err) = e.downcast_ref::<forge_core::error::ForgeError>() {
+            eprintln!("{}", forge_err.suggestion().yellow());
+        } else {
+            eprintln!(
+                "{}",
+                "   Usa 'forge --help' para ver los comandos disponibles.".dimmed()
+            );
+        }
+
         std::process::exit(1);
     }
 
@@ -238,6 +290,13 @@ async fn cmd_init(project_dir: &PathBuf, lang: &str) -> anyhow::Result<()> {
         _ => "src",
     };
 
+    let test_dir = match lang {
+        "java" => "src/test/java",
+        "kotlin" => "src/test/kotlin",
+        "python" => "tests",
+        _ => "tests",
+    };
+
     let full_source_dir = project_dir.join(source_dir);
     std::fs::create_dir_all(&full_source_dir)?;
     println!(
@@ -246,8 +305,17 @@ async fn cmd_init(project_dir: &PathBuf, lang: &str) -> anyhow::Result<()> {
         source_dir
     );
 
-    // Crear archivo de ejemplo
+    let full_test_dir = project_dir.join(test_dir);
+    std::fs::create_dir_all(&full_test_dir)?;
+    println!(
+        "   {} {}",
+        "✅ Creado:".green(),
+        test_dir
+    );
+
+    // Crear archivo de ejemplo y test
     create_example_file(lang, &full_source_dir)?;
+    create_test_file(lang, &full_test_dir)?;
 
     // Crear .gitignore
     let gitignore = project_dir.join(".gitignore");
@@ -266,8 +334,9 @@ async fn cmd_init(project_dir: &PathBuf, lang: &str) -> anyhow::Result<()> {
     );
     println!("   1. Edita {} para configurar tu proyecto", "forge.toml".cyan());
     println!("   2. Escribe tu código en {}", source_dir.cyan());
-    println!("   3. Ejecuta {} para compilar", "forge build".cyan());
-    println!("   4. Ejecuta {} para correr tu programa", "forge run".cyan());
+    println!("   3. Ejecuta {} para compilar tu programa", "forge build".cyan());
+    println!("   4. Ejecuta {} para validar los tests", "forge test".cyan());
+    println!("   5. Ejecuta {} para correr tu programa", "forge run".cyan());
     println!();
 
     Ok(())
@@ -333,11 +402,98 @@ if __name__ == "__main__":
     Ok(())
 }
 
+/// Crea un archivo de test de ejemplo según el lenguaje.
+fn create_test_file(lang: &str, test_dir: &PathBuf) -> anyhow::Result<()> {
+    match lang {
+        "java" => {
+            let file = test_dir.join("MainTest.java");
+            if !file.exists() {
+                std::fs::write(
+                    &file,
+                    r#"import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+public class MainTest {
+    @Test
+    void forgeTestWorks() {
+        assertEquals(2, 1 + 1, "FORGE Test Runner debería funcionar correctamente");
+    }
+}
+"#,
+                )?;
+                println!("   {} MainTest.java (ejemplo de test)", "✅ Creado:".green());
+            }
+        }
+        "kotlin" => {
+            let file = test_dir.join("MainTest.kt");
+            if !file.exists() {
+                std::fs::write(
+                    &file,
+                    r#"import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assertions.assertEquals
+
+class MainTest {
+    @Test
+    fun `forge test works`() {
+        assertEquals(2, 1 + 1, "FORGE Test Runner debería funcionar correctamente")
+    }
+}
+"#,
+                )?;
+                println!("   {} MainTest.kt (ejemplo de test)", "✅ Creado:".green());
+            }
+        }
+        "python" => {
+            let file = test_dir.join("test_main.py");
+            if !file.exists() {
+                std::fs::write(
+                    &file,
+                    r#"def test_forge_works():
+    assert 1 + 1 == 2, "FORGE Test Runner debería funcionar correctamente"
+"#,
+                )?;
+                println!("   {} test_main.py (ejemplo de test)", "✅ Creado:".green());
+            }
+        }
+        _ => {}
+    }
+
+    Ok(())
+}
+
 /// Comando: forge build
-async fn cmd_build(project_dir: &PathBuf, _verbose: bool) -> anyhow::Result<()> {
+async fn cmd_build(project_dir: &PathBuf, _verbose: bool, release: bool) -> anyhow::Result<()> {
     let config = ForgeConfig::load(project_dir)?;
 
-    // Verificar caché: ¿necesitamos recompilar?
+    // 📦 Multi-módulo: compilar sub-módulos primero
+    if !config.modules.is_empty() {
+        println!(
+            "{}",
+            format!("📦 Workspace detectado: {} sub-módulos", config.modules.len()).cyan().bold()
+        );
+        for module_path in &config.modules {
+            let module_dir = project_dir.join(module_path);
+            if !module_dir.join("forge.toml").exists() {
+                println!(
+                    "   {}",
+                    format!("⚠️  Módulo '{}' no tiene forge.toml, saltando...", module_path).yellow()
+                );
+                continue;
+            }
+            println!(
+                "   {}",
+                format!("🔨 Compilando módulo: {}", module_path).cyan()
+            );
+            let module_dir_buf = module_dir.to_path_buf();
+            Box::pin(cmd_build(&module_dir_buf, _verbose, release)).await?;
+        }
+        println!(
+            "   {}",
+            "✅ Todos los sub-módulos compilados".green()
+        );
+    }
+
+    // 1. Verificación Caché Local
     let source_dir = project_dir.join(config.source_dir());
     let extensions = forge_langs::extensions_for_lang(&config.project.lang);
     let mut cache = BuildCache::load(project_dir)?;
@@ -345,35 +501,63 @@ async fn cmd_build(project_dir: &PathBuf, _verbose: bool) -> anyhow::Result<()> 
     if !cache.has_changes(&source_dir, extensions)? {
         println!(
             "{}",
-            "⚡ Sin cambios detectados — usando caché".dimmed()
+            "⚡ Sin cambios detectados — usando caché local".dimmed()
         );
         return Ok(());
     }
+
+    // 2. Verificación Caché Remoto (Si está configurado)
+    let output_dir_name = &config.project.output_dir;
+    let mut used_remote = false;
+    
+    if let Some(remote_cfg) = &config.cache {
+        // Intenta descargar el output compilado remotamente para este master_hash
+        cache.update_hashes(&source_dir, extensions)?;
+        if cache.download_from_remote(project_dir, output_dir_name, remote_cfg).await? {
+            used_remote = true;
+            cache.save(project_dir)?;
+        }
+    }
+
+    // 3. Compilación o Skipping
+    if !used_remote {
+
+    // 🪝 Hooks pre-build
+    hooks::run_pre_build(&config.hooks, project_dir).await?;
 
     // Resolver dependencias si hay
     if !config.dependencies.is_empty() {
         resolve_dependencies(&config, project_dir).await?;
     }
 
-    // Compilar según el lenguaje
-    match config.project.lang.as_str() {
-        "java" => JavaModule::compile(&config, project_dir).await?,
-        "kotlin" => KotlinModule::compile(&config, project_dir).await?,
-        "python" => PythonModule::compile(&config, project_dir).await?,
-        _ => {}
+        // Compilar según el lenguaje
+        match config.project.lang.as_str() {
+            "java" => JavaModule::compile(&config, project_dir).await?,
+            "kotlin" => KotlinModule::compile(&config, project_dir).await?,
+            "python" => PythonModule::compile(&config, project_dir).await?,
+            _ => {}
+        }
+
+        // Actualizar caché
+        cache.update_hashes(&source_dir, extensions)?;
+        cache.save(project_dir)?;
+
+        // Si la compilación fue local y tenemos push habilitado, subir artefactos
+        if let Some(remote_cfg) = &config.cache {
+            cache.upload_to_remote(project_dir, output_dir_name, remote_cfg).await?;
+        }
     }
 
-    // Actualizar caché
-    cache.update_hashes(&source_dir, extensions)?;
-    cache.save(project_dir)?;
+    // 🪝 Hooks post-build
+    hooks::run_post_build(&config.hooks, project_dir).await?;
 
     Ok(())
 }
 
 /// Comando: forge run
 async fn cmd_run(project_dir: &PathBuf, verbose: bool) -> anyhow::Result<()> {
-    // Primero compilar
-    cmd_build(project_dir, verbose).await?;
+    // Primero compilar (en modo por defecto / no-release para run)
+    cmd_build(project_dir, verbose, false).await?;
 
     let config = ForgeConfig::load(project_dir)?;
 
@@ -394,22 +578,24 @@ async fn cmd_test(project_dir: &PathBuf, verbose: bool) -> anyhow::Result<()> {
 
     println!("{}", "🧪 Ejecutando tests...".bold());
 
+    // 🪝 Hooks pre-test
+    hooks::run_pre_test(&config.hooks, project_dir).await?;
+
     match config.project.lang.as_str() {
         "java" => {
-            // Compilar primero
-            cmd_build(project_dir, verbose).await?;
-            println!("   {}", "⚠️  Tests Java: Próximamente (JUnit runner)".yellow());
+            cmd_build(project_dir, verbose, false).await?;
+            JavaModule::test(&config, project_dir).await?;
         }
         "kotlin" => {
-            cmd_build(project_dir, verbose).await?;
-            println!(
-                "   {}",
-                "⚠️  Tests Kotlin: Próximamente (JUnit runner)".yellow()
-            );
+            cmd_build(project_dir, verbose, false).await?;
+            KotlinModule::test(&config, project_dir).await?;
         }
         "python" => PythonModule::test(&config, project_dir).await?,
         _ => {}
     }
+
+    // 🪝 Hooks post-test
+    hooks::run_post_test(&config.hooks, project_dir).await?;
 
     Ok(())
 }
@@ -448,11 +634,19 @@ async fn resolve_dependencies(config: &ForgeConfig, project_dir: &PathBuf) -> an
     match config.project.lang.as_str() {
         "java" | "kotlin" => {
             let mut resolver = MavenResolver::new(project_dir);
-            resolver.resolve_all(&config.dependencies).await?;
+            if !config.dependencies.is_empty() {
+                resolver.resolve_all(&config.dependencies).await?;
+            }
+            if !config.test_dependencies.is_empty() {
+                resolver.resolve_test_deps(&config.test_dependencies).await?;
+            }
         }
         "python" => {
             let resolver = PypiResolver::new();
-            resolver.verify_all(&config.dependencies).await?;
+            if !config.dependencies.is_empty() {
+                resolver.verify_all(&config.dependencies).await?;
+            }
+            // Python tests suelen ser via pytest/requirements-dev, por ahora ignoramos verify de test_deps pypi
         }
         _ => {}
     }
@@ -594,7 +788,7 @@ async fn cmd_watch(project_dir: &PathBuf) -> anyhow::Result<()> {
 
     // Build inicial
     println!("{}", "\n── Build inicial ──".dimmed());
-    if let Err(e) = cmd_build(project_dir, false).await {
+    if let Err(e) = cmd_build(project_dir, false, false).await {
         eprintln!("   {} {}", "⚠️  Error en build:".yellow(), e);
     }
 
@@ -648,7 +842,7 @@ async fn cmd_watch(project_dir: &PathBuf) -> anyhow::Result<()> {
                     );
 
                     let start = Instant::now();
-                    match cmd_build(project_dir, false).await {
+                    match cmd_build(project_dir, false, false).await {
                         Ok(_) => {
                             println!(
                                 "{}",
@@ -996,7 +1190,7 @@ async fn cmd_bench(project_dir: &PathBuf, verbose: bool) -> anyhow::Result<()> {
         );
 
         let start = Instant::now();
-        cmd_build(project_dir, verbose).await?;
+        cmd_build(project_dir, verbose, false).await?;
         let elapsed = start.elapsed().as_secs_f64();
         times.push(elapsed);
 
@@ -1044,7 +1238,7 @@ async fn cmd_package(project_dir: &PathBuf) -> anyhow::Result<()> {
     );
 
     // Compilar primero
-    cmd_build(project_dir, false).await?;
+    cmd_build(project_dir, false, false).await?;
 
     // Crear directorio dist
     let dist_dir = project_dir.join("dist");

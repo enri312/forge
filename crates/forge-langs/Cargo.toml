@@ -16,3 +16,5 @@ tracing.workspace = true
 thiserror.workspace = true
 anyhow.workspace = true
 colored.workspace = true
+reqwest = { workspace = true, features = ["json"] }
+dirs.workspace = true

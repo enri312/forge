@@ -96,12 +96,17 @@ lang = "java"
 
 [java]
 source = "src/main/java"
+test-source = "src/test/java"
 target = "17"
 main-class = "com.ejemplo.Main"
 
 [dependencies]
 "com.google.guava:guava" = "33.0.0-jre"
 "org.slf4j:slf4j-api" = "2.0.9"
+
+[test-dependencies]
+"org.junit.jupiter:junit-jupiter-api" = "6.0.3"
+"org.junit.jupiter:junit-jupiter-engine" = "6.0.3"
 
 [tasks.lint]
 command = "echo Linting..."
@@ -144,7 +149,7 @@ main-script = "main.py"
 
 ---
 
-## 📦 Comandos Disponibles (15)
+## 📦 Comandos Disponibles (21)
 
 ### Esenciales
 
@@ -157,6 +162,10 @@ main-script = "main.py"
 | `forge test` | 🧪 Ejecutar tests |
 | `forge clean` | 🧹 Limpiar artefactos y caché |
 | `forge deps` | 📦 Resolver dependencias |
+| `forge add <dep>`| ➕ Añadir una dependencia automágicamente |
+| `forge tree` | 🌲 Visualizar árbol de dependencias resueltas |
+| `forge upgrade` | ⬆️ Actualizar versiones de dependencias declaradas |
+| `forge ide <target>` | 🛠️ Generar metadatos IDE (`vscode` / `intellij`) |
 
 ### Desarrollo
 
@@ -166,6 +175,8 @@ main-script = "main.py"
 | `forge task <nombre>` | ⚙️ Ejecutar tarea personalizada del `forge.toml` |
 | `forge bench` | ⏱️ Benchmark: medir tiempos de compilación |
 | `forge package` | 📦 Empaquetar proyecto para distribución |
+| `forge fmt` | 🎨 Formatear código (google-java-format, ktlint, black) |
+| `forge lint` | 🔍 Análisis estático (checkstyle, detekt, ruff) |
 
 ### Información
 
@@ -180,6 +191,7 @@ main-script = "main.py"
 
 ```bash
 forge --verbose build      # Modo verboso
+forge build --release      # Modo de compilación optimizado
 forge -p /otra/ruta build  # Especificar directorio del proyecto
 forge --help               # Ver ayuda
 forge --version            # Ver versión
@@ -196,14 +208,20 @@ forge/
 ├── forge-cli    → Interfaz de línea de comandos (clap)
 ├── forge-core   → Motor: DAG, ejecutor paralelo, caché
 ├── forge-langs  → Módulos: Java, Kotlin, Python
-└── forge-deps   → Resolución: Maven Central, PyPI
+├── forge-deps   → Resolución: Maven Central, PyPI
+└── editors/     → Extensiones oficiales (Ej. vscode)
 ```
 
 ### Características Técnicas
 
 - **⚡ Ejecución Paralela**: Las tareas sin dependencias se ejecutan simultáneamente usando un grafo DAG
 - **💾 Caché Incremental**: Solo recompila archivos que han cambiado (hashing SHA-256)
-- **📦 Dependencias Automáticas**: Descarga JARs de Maven Central y paquetes de PyPI
+- **📦 Dependencias Automáticas**: Descarga JARs de Maven Central y paquetes de PyPI con **resolución transitiva** de POMs
+- **🧪 Test Runners Nativos**: Integra PyTest y auto-descarga global de JUnit 6 Console Standalone para testear nativamente.
+- **🛠️ Compatibilidad IDE**: Generación automática de setups con `forge ide` y bundle interactivo para VS Code.
+- **🪝 Hooks de Ciclo de Vida**: `pre-build`, `post-build`, `pre-test`, `post-test` configurables en `forge.toml`
+- **📦 Multi-Módulo**: Soporte de workspaces con sub-proyectos independientes (`modules = [...]`)
+- **🎨 Formateo y Linting**: `forge fmt` y `forge lint` integran herramientas nativas por lenguaje
 - **👁️ Watch Mode**: Vigila cambios y recompila automáticamente usando file watchers nativos
 - **🩺 System Doctor**: Diagnóstico completo con sugerencias de instalación
 - **📊 Project Stats**: Conteo de archivos, líneas de código y tamaño
@@ -241,12 +259,11 @@ forge/
 - [x] **v0.1.1** — `forge doctor`, `forge stats`, `forge bench`
 - [x] **v0.1.1** — `forge new`, `forge task`, `forge package`
 - [x] **v0.1.1** — GitHub Actions CI (Linux, Windows, macOS)
-- [ ] **v0.2** — Plugin system
-- [ ] **v0.2** — Test runners nativos (JUnit, pytest)
-- [ ] **v0.3** — Caché remoto distribuido
-- [ ] **v0.3** — Soporte multi-módulo
-- [ ] **v0.4** — Plugin VS Code con syntax highlighting
-- [ ] **v0.5** — Language Server Protocol (LSP) para `forge.toml`
+- [x] **v0.2.0** — Test runners nativos (Aislacion de descargas de tests unitarios, auto-descarga global de JUnit 6 Console, setup nativo virtualenv pytest/unittest e integracion CLI)
+- [x] **v0.3.0** — Generador de setups `forge ide` y Extensión básica de VS Code
+- [x] **v0.4.0** — Hooks de ciclo de vida, dependencias transitivas Maven, multi-módulo, `forge fmt` y `forge lint`
+- [ ] **v0.5.0** — Caché remoto distribuido
+- [ ] **v0.5.0** — Language Server Protocol (LSP) para `forge.toml` y configurador dinámico
 
 ---
 

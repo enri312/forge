@@ -12,7 +12,7 @@ use std::path::Path;
 use crate::error::{ForgeError, ForgeResult};
 
 /// Configuración principal del proyecto, mapeada desde forge.toml.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ForgeConfig {
     /// Metadatos del proyecto
     pub project: ProjectConfig,
@@ -30,13 +30,42 @@ pub struct ForgeConfig {
     #[serde(default)]
     pub dependencies: HashMap<String, String>,
 
+    /// Dependencias exclusivas para testing
+    #[serde(default, rename = "test-dependencies")]
+    pub test_dependencies: HashMap<String, String>,
+
     /// Tareas personalizadas
     #[serde(default)]
     pub tasks: HashMap<String, TaskConfig>,
+
+    /// Hooks de ciclo de vida (pre-build, post-build, pre-test, post-test)
+    #[serde(default)]
+    pub hooks: HooksConfig,
+
+    /// Sub-módulos del workspace (multi-módulo)
+    #[serde(default)]
+    pub modules: Vec<String>,
+
+    /// Configuración de caché distribuido (Fase 16)
+    pub cache: Option<RemoteCacheConfig>,
+}
+
+/// Configuración de servidor remoto de Caché (Distribución S3/HTTP)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RemoteCacheConfig {
+    /// URL del bucket o servidor (ej: `http://forge-cache.local`)
+    pub remote: String,
+    
+    /// Token opcional (Bearer) si la subida requiere autenticación
+    pub token: Option<String>,
+    
+    /// Controla si se subirá el caché local al servidor
+    #[serde(default)]
+    pub push: bool,
 }
 
 /// Metadatos generales del proyecto.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ProjectConfig {
     /// Nombre del proyecto
     pub name: String,
@@ -46,13 +75,14 @@ pub struct ProjectConfig {
     pub version: String,
 
     /// Lenguaje principal: "java", "kotlin", "python"
+    #[serde(default = "default_lang")]
     pub lang: String,
 
     /// Descripción breve del proyecto
     #[serde(default)]
     pub description: String,
 
-    /// Directorio de salida de compilación
+    /// Directorio de salida (default: "build")
     #[serde(default = "default_output_dir")]
     pub output_dir: String,
 }
@@ -63,6 +93,10 @@ pub struct JavaConfig {
     /// Directorio de código fuente
     #[serde(default = "default_java_source")]
     pub source: String,
+
+    /// Directorio de código de tests
+    #[serde(default = "default_java_test_source", rename = "test-source")]
+    pub test_source: String,
 
     /// Versión objetivo del JDK (ej: "17", "21")
     #[serde(default = "default_java_target")]
@@ -79,6 +113,10 @@ pub struct KotlinConfig {
     /// Directorio de código fuente
     #[serde(default = "default_kotlin_source")]
     pub source: String,
+
+    /// Directorio de código de tests
+    #[serde(default = "default_kotlin_test_source", rename = "test-source")]
+    pub test_source: String,
 
     /// Versión objetivo de la JVM
     #[serde(default = "default_java_target")]
@@ -119,10 +157,34 @@ pub struct TaskConfig {
     pub description: String,
 }
 
+/// Hooks de ciclo de vida del build.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct HooksConfig {
+    /// Comando(s) a ejecutar ANTES de compilar
+    #[serde(default, rename = "pre-build")]
+    pub pre_build: Vec<String>,
+
+    /// Comando(s) a ejecutar DESPUÉS de compilar
+    #[serde(default, rename = "post-build")]
+    pub post_build: Vec<String>,
+
+    /// Comando(s) a ejecutar ANTES de testear
+    #[serde(default, rename = "pre-test")]
+    pub pre_test: Vec<String>,
+
+    /// Comando(s) a ejecutar DESPUÉS de testear
+    #[serde(default, rename = "post-test")]
+    pub post_test: Vec<String>,
+}
+
 // ── Valores por defecto ──────────────────────────────────────────────────────
 
 fn default_version() -> String {
     "0.1.0".to_string()
+}
+
+fn default_lang() -> String {
+    "java".to_string()
 }
 
 fn default_output_dir() -> String {
@@ -133,8 +195,16 @@ fn default_java_source() -> String {
     "src/main/java".to_string()
 }
 
+fn default_java_test_source() -> String {
+    "src/test/java".to_string()
+}
+
 fn default_kotlin_source() -> String {
     "src/main/kotlin".to_string()
+}
+
+fn default_kotlin_test_source() -> String {
+    "src/test/kotlin".to_string()
 }
 
 fn default_python_source() -> String {
@@ -272,17 +342,22 @@ main-class = "com.ejemplo.Main"
 
 [dependencies]
 "com.google.guava:guava" = "33.0.0"
+
+[test-dependencies]
+"org.junit.jupiter:junit-jupiter-api" = "5.10.1"
 "#;
 
         let config: ForgeConfig = toml::from_str(toml_str).unwrap();
         assert_eq!(config.project.name, "mi-app");
         assert_eq!(config.project.lang, "java");
         assert_eq!(config.java.as_ref().unwrap().target, "21");
+        assert_eq!(config.java.as_ref().unwrap().test_source, "src/test/java");
         assert_eq!(
             config.java.as_ref().unwrap().main_class,
             Some("com.ejemplo.Main".to_string())
         );
         assert!(config.dependencies.contains_key("com.google.guava:guava"));
+        assert!(config.test_dependencies.contains_key("org.junit.jupiter:junit-jupiter-api"));
     }
 
     #[test]

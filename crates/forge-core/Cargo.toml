@@ -19,3 +19,9 @@ thiserror.workspace = true
 anyhow.workspace = true
 colored.workspace = true
 indicatif.workspace = true
+console.workspace = true
+
+# HTTP & Compresión para Caché Distribuido
+reqwest.workspace = true
+tar = "0.4.40"
+flate2 = "1.0.30"

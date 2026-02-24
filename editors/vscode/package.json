@@ -1,0 +1,53 @@
+{
+    "name": "forge",
+    "displayName": "FORGE Build System",
+    "description": "Official extension for the FORGE Build System",
+    "version": "0.1.0",
+    "publisher": "enri312",
+    "engines": {
+        "vscode": "^1.80.0"
+    },
+    "categories": [
+        "Programming Languages",
+        "Other"
+    ],
+    "activationEvents": [
+        "workspaceContains:forge.toml"
+    ],
+    "main": "./out/extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "forge.build",
+                "title": "Forge: Build Project"
+            },
+            {
+                "command": "forge.run",
+                "title": "Forge: Run Project"
+            },
+            {
+                "command": "forge.test",
+                "title": "Forge: Run Tests"
+            }
+        ],
+        "menus": {
+            "editor/context": [
+                {
+                    "when": "resourceFilename == forge.toml",
+                    "command": "forge.build",
+                    "group": "forge@1"
+                }
+            ]
+        }
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./"
+    },
+    "devDependencies": {
+        "@types/vscode": "^1.80.0",
+        "@types/node": "18.x",
+        "typescript": "^5.1.3"
+    }
+}

@@ -259,6 +259,231 @@ impl KotlinModule {
 
         Ok(())
     }
+
+    /// Compila y ejecuta los tests Kotlin (JUnit 5/6).
+    pub async fn test(config: &ForgeConfig, project_dir: &Path) -> ForgeResult<()> {
+        let kotlin_config = config.kotlin.as_ref();
+        let test_source_dir = project_dir.join(
+            kotlin_config
+                .map(|k| k.test_source.as_str())
+                .unwrap_or("src/test/kotlin"),
+        );
+
+        if !test_source_dir.exists() {
+            println!(
+                "   {}",
+                "ℹ️  No se encontró directorio de tests (src/test/kotlin). Ignorando...".dimmed()
+            );
+            return Ok(());
+        }
+
+        let output_dir = project_dir.join(&config.project.output_dir);
+        let classes_dir = output_dir.join("classes");
+        let test_classes_dir = output_dir.join("test-classes");
+        let deps_dir = project_dir.join(".forge").join("deps");
+        let test_deps_dir = project_dir.join(".forge").join("test-deps");
+
+        // 1. Asegurar que el código fuente principal esté compilado
+        if !classes_dir.exists() {
+            Self::compile(config, project_dir).await?;
+        }
+
+        // 2. Compilar los tests
+        std::fs::create_dir_all(&test_classes_dir)
+            .context("No se pudo crear el directorio test-classes")?;
+
+        let test_files: Vec<PathBuf> = WalkDir::new(&test_source_dir)
+            .into_iter()
+            .filter_map(|e| e.ok())
+            .filter(|e| {
+                e.path()
+                    .extension()
+                    .map(|ext| ext == "kt")
+                    .unwrap_or(false)
+            })
+            .map(|e| e.path().to_path_buf())
+            .collect();
+
+        if test_files.is_empty() {
+            println!(
+                "   {}",
+                "⚠️  No se encontraron archivos .kt en el directorio de tests".yellow()
+            );
+            return Ok(());
+        }
+
+        println!(
+            "   {}",
+            format!("🧪 Compilando {} archivos de test Kotlin...", test_files.len()).cyan()
+        );
+
+        let mut cp_parts = vec![classes_dir.to_string_lossy().to_string()];
+        let deps_cp = build_kotlin_classpath(&deps_dir);
+        if !deps_cp.is_empty() {
+            cp_parts.push(deps_cp);
+        }
+        let test_deps_cp = build_kotlin_classpath(&test_deps_dir);
+        if !test_deps_cp.is_empty() {
+            cp_parts.push(test_deps_cp);
+        }
+
+        let junit_console_jar = Self::download_junit_standalone().await?;
+        cp_parts.push(junit_console_jar.to_string_lossy().to_string());
+
+        let separator = if cfg!(target_os = "windows") { ";" } else { ":" };
+        let compile_classpath = cp_parts.join(separator);
+
+        let jvm_target = kotlin_config
+            .map(|k| k.jvm_target.as_str())
+            .unwrap_or("17");
+
+        let kotlinc_cmd = if cfg!(target_os = "windows") {
+            "kotlinc.bat"
+        } else {
+            "kotlinc"
+        };
+
+        let mut cmd = tokio::process::Command::new(if cfg!(target_os = "windows") { "cmd" } else { kotlinc_cmd });
+        
+        if cfg!(target_os = "windows") {
+            cmd.arg("/C").arg("kotlinc");
+        }
+
+        cmd.arg("-d")
+            .arg(&test_classes_dir)
+            .arg("-jvm-target")
+            .arg(jvm_target)
+            .arg("-include-runtime")
+            .arg("-cp")
+            .arg(&compile_classpath);
+
+        for file in &test_files {
+            cmd.arg(file);
+        }
+
+        let output = cmd
+            .current_dir(project_dir)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output()
+            .await
+            .map_err(|e| ForgeError::CommandNotFound {
+                command: format!("kotlinc (test): {}", e),
+            })?;
+
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            return Err(ForgeError::TaskFailed {
+                task_name: format!("kotlinc tests: {}", stderr),
+                exit_code: output.status.code().unwrap_or(-1),
+            }
+            .into());
+        }
+
+        println!("   {}", "✅ Tests compilados. Ejecutando JUnit...".green());
+        println!();
+
+        // 3. Ejecutar los tests Kotlin via JUnit Console Standalone en Java
+        let mut exec_cp_parts = vec![
+            test_classes_dir.to_string_lossy().to_string(),
+            classes_dir.to_string_lossy().to_string(),
+        ];
+        
+        // Agregar Kotlin stdlib al classpath runtime
+        if let Some(stdlib_path) = find_kotlin_stdlib() {
+            exec_cp_parts.push(stdlib_path);
+        }
+
+        let exec_deps_cp = build_kotlin_classpath(&deps_dir);
+        if !exec_deps_cp.is_empty() { exec_cp_parts.push(exec_deps_cp); }
+
+        let exec_test_deps_cp = build_kotlin_classpath(&test_deps_dir);
+        if !exec_test_deps_cp.is_empty() { exec_cp_parts.push(exec_test_deps_cp); }
+
+        let exec_classpath = exec_cp_parts.join(separator);
+
+        let mut java_cmd = tokio::process::Command::new("java");
+        java_cmd
+            .arg("-jar")
+            .arg(&junit_console_jar)
+            .arg("--class-path")
+            .arg(&exec_classpath)
+            .arg("--scan-class-path")
+            .arg("--details=tree")
+            .arg("--disable-banner");
+
+        let status = java_cmd
+            .current_dir(project_dir)
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+            .status()
+            .await
+            .map_err(|e| ForgeError::CommandNotFound {
+                command: format!("java (junit kotlin): {}", e),
+            })?;
+
+        if !status.success() {
+            return Err(ForgeError::TaskFailed {
+                task_name: "kotlin test".to_string(),
+                exit_code: status.code().unwrap_or(-1),
+            }
+            .into());
+        }
+
+        Ok(())
+    }
+
+    /// Descarga la consola standalone de JUnit si no existe
+    async fn download_junit_standalone() -> ForgeResult<PathBuf> {
+        let tools_dir = dirs::home_dir()
+            .unwrap_or_else(|| PathBuf::from("."))
+            .join(".forge")
+            .join("tools");
+
+        std::fs::create_dir_all(&tools_dir).map_err(|e| ForgeError::IoError {
+            path: tools_dir.clone(),
+            message: e.to_string(),
+        })?;
+
+        let jar_name = "junit-platform-console-standalone-6.0.3.jar";
+        let jar_path = tools_dir.join(jar_name);
+
+        if jar_path.exists() {
+            return Ok(jar_path);
+        }
+
+        println!(
+            "   {}",
+            "⬇️  Descargando JUnit Platform Console Standalone...".dimmed()
+        );
+
+        let url = "https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.12.0/junit-platform-console-standalone-1.12.0.jar";
+        
+        let client = reqwest::Client::new();
+        let response = client.get(url).send().await.map_err(|e: reqwest::Error| ForgeError::DownloadError {
+            url: url.to_string(),
+            message: e.to_string()
+        })?;
+
+        if !response.status().is_success() {
+            return Err(ForgeError::DownloadError {
+                url: url.to_string(),
+                message: format!("HTTP {}", response.status()),
+            }.into());
+        }
+
+        let bytes = response.bytes().await.map_err(|e: reqwest::Error| ForgeError::DownloadError {
+            url: url.to_string(),
+            message: e.to_string()
+        })?;
+
+        std::fs::write(&jar_path, &bytes).map_err(|e| ForgeError::IoError {
+            path: jar_path.clone(),
+            message: e.to_string(),
+        })?;
+
+        Ok(jar_path)
+    }
 }
 
 /// Construye classpath con JARs de dependencias.

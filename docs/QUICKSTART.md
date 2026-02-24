@@ -83,6 +83,9 @@ Edita `forge.toml`:
 ```toml
 [dependencies]
 "com.google.gson:gson" = "2.10.1"
+
+[test-dependencies]
+"org.junit.jupiter:junit-jupiter-api" = "6.0.3"
 ```
 
 ```bash

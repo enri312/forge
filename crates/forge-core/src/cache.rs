@@ -6,12 +6,20 @@
 // =============================================================================
 
 use std::collections::HashMap;
+use std::fs::File;
 use std::path::{Path, PathBuf};
 
+use colored::Colorize;
+use flate2::Compression;
+use flate2::read::GzDecoder;
+use flate2::write::GzEncoder;
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use tar::{Archive, Builder};
 use walkdir::WalkDir;
 
+use crate::config::RemoteCacheConfig;
 use crate::error::{ForgeError, ForgeResult};
 
 /// Estado de caché del build, persiste entre ejecuciones.
@@ -131,6 +139,137 @@ impl BuildCache {
             })?;
         }
         Ok(())
+    }
+
+    /// Comprime un directorio de caché local (output) y lo sube al servidor remoto
+    pub async fn upload_to_remote(
+        &self,
+        project_dir: &Path,
+        output_dir_name: &str,
+        remote_config: &RemoteCacheConfig,
+    ) -> ForgeResult<()> {
+        if !remote_config.push {
+            return Ok(());
+        }
+
+        // 1. Calcular el hash maestro (representando el estado global de dependencias/ficheros base del proyecto)
+        let master_hash = self.compute_master_hash()?;
+        let archive_name = format!("{}.tar.gz", master_hash);
+        let remote_url = format!("{}/cache/{}", remote_config.remote.trim_end_matches('/'), archive_name);
+
+        println!("   {} Subiendo build al caché distribuido ({})", "⬆️".cyan(), master_hash);
+
+        // 2. Comprimir el directorio de salida en un buffer en memoria o disco
+        let output_path = project_dir.join(output_dir_name);
+        if !output_path.exists() {
+            return Ok(());
+        }
+
+        let tar_gz_path = std::env::temp_dir().join(&archive_name);
+        let tar_gz_file = File::create(&tar_gz_path).map_err(|e| ForgeError::IoError {
+            path: tar_gz_path.clone(),
+            message: e.to_string(),
+        })?;
+
+        let enc = GzEncoder::new(tar_gz_file, Compression::default());
+        let mut tar = Builder::new(enc);
+        tar.append_dir_all(".", &output_path).map_err(|e| ForgeError::IoError {
+            path: output_path.clone(),
+            message: format!("Error al comprimir caché: {}", e),
+        })?;
+        tar.into_inner().unwrap().finish().unwrap();
+
+        // 3. Subir vía HTTP PUT
+        let client = Client::new();
+        let mut req = client.put(&remote_url);
+        if let Some(token) = &remote_config.token {
+            req = req.bearer_auth(token);
+        }
+
+        let file_bytes = std::fs::read(&tar_gz_path).unwrap();
+        let res: Result<reqwest::Response, reqwest::Error> = req.body(file_bytes).send().await;
+        let _ = std::fs::remove_file(&tar_gz_path); // Limpiar tmp local
+
+        match res {
+            Ok(resp) if resp.status().is_success() => {
+                println!("   {} Caché remoto actualizado exitosamente", "✅".green());
+                Ok(())
+            }
+            Ok(resp) => {
+                eprintln!("   {} Fallo al subir caché ({})", "⚠️".yellow(), resp.status());
+                Ok(()) // No es fatal
+            }
+            Err(e) => {
+                eprintln!("   {} Fallo red al subir caché: {}", "⚠️".yellow(), e);
+                Ok(())
+            }
+        }
+    }
+
+    /// Intenta descargar un caché pre-compilado desde el servidor remoto
+    pub async fn download_from_remote(
+        &self,
+        project_dir: &Path,
+        output_dir_name: &str,
+        remote_config: &RemoteCacheConfig,
+    ) -> ForgeResult<bool> {
+        let master_hash = self.compute_master_hash()?;
+        let archive_name = format!("{}.tar.gz", master_hash);
+        let remote_url = format!("{}/cache/{}", remote_config.remote.trim_end_matches('/'), archive_name);
+
+        let client = Client::new();
+        let mut req = client.get(&remote_url);
+        if let Some(token) = &remote_config.token {
+            req = req.bearer_auth(token);
+        }
+
+        let res: Result<reqwest::Response, reqwest::Error> = req.send().await;
+        match res {
+            Ok(resp) if resp.status().is_success() => {
+                println!("   {} Caché distribuido encontrado ({})", "☁️".cyan(), master_hash);
+                
+                let bytes = resp.bytes().await.unwrap();
+                
+                // Extraer
+                let output_path = project_dir.join(output_dir_name);
+                if output_path.exists() {
+                     let _ = std::fs::remove_dir_all(&output_path);
+                }
+                std::fs::create_dir_all(&output_path).unwrap();
+
+                let tar_gz = std::io::Cursor::new(bytes);
+                let tar = GzDecoder::new(tar_gz);
+                let mut archive = Archive::new(tar);
+                
+                if let Err(e) = archive.unpack(&output_path) {
+                    eprintln!("   {} Error extrayendo caché: {}", "⚠️".yellow(), e);
+                    return Ok(false);
+                }
+
+                println!("   {} Caché remoto restaurado en {}", "⚡".green(), output_dir_name);
+                return Ok(true);
+            }
+            _ => {
+                // Not found o error ("Miss")
+                Ok(false)
+            }
+        }
+    }
+
+    /// Combina los file_hashes para generar un único hash que defina el estado global del código actual
+    pub fn compute_master_hash(&self) -> ForgeResult<String> {
+        let mut hasher = Sha256::new();
+        let mut sorted_keys: Vec<&String> = self.file_hashes.keys().collect();
+        sorted_keys.sort();
+
+        for key in sorted_keys {
+            if let Some(hash) = self.file_hashes.get(key) {
+                hasher.update(key.as_bytes());
+                hasher.update(hash.as_bytes());
+            }
+        }
+
+        Ok(format!("{:x}", hasher.finalize()))
     }
 
     /// Ruta del archivo de caché.
