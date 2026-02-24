@@ -14,19 +14,19 @@ jobs:
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            artifact_name: cyrce-forge-cli
+            artifact_name: forge
             asset_name: forge-x86_64-unknown-linux-gnu.tar.gz
           - os: macos-latest
             target: x86_64-apple-darwin
-            artifact_name: cyrce-forge-cli
+            artifact_name: forge
             asset_name: forge-x86_64-apple-darwin.tar.gz
           - os: macos-latest
             target: aarch64-apple-darwin
-            artifact_name: cyrce-forge-cli
+            artifact_name: forge
             asset_name: forge-aarch64-apple-darwin.tar.gz
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-            artifact_name: cyrce-forge-cli.exe
+            artifact_name: forge.exe
             asset_name: forge-x86_64-pc-windows-msvc.zip
 
     steps:
