@@ -1,0 +1,26 @@
+# FORGE - Archivos generados
+build/
+.forge/
+
+# Rust
+target/
+**/*.rs.bk
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Python (proyectos de prueba)
+__pycache__/
+*.pyc
+*.pyo
+.env
+venv/

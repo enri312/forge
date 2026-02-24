@@ -1,0 +1,53 @@
+[workspace]
+members = [
+    "crates/forge-cli",
+    "crates/forge-core",
+    "crates/forge-langs",
+    "crates/forge-deps",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["FORGE Contributors"]
+license = "MIT"
+description = "🔥 FORGE — Build system de nueva generación. Rápido, simple y multi-lenguaje."
+
+[workspace.dependencies]
+# Serialización y configuración
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+
+# CLI
+clap = { version = "4.5", features = ["derive", "color"] }
+
+# Async runtime
+tokio = { version = "1.36", features = ["full"] }
+
+# HTTP para descargar dependencias
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+
+# Hashing para caché incremental
+sha2 = "0.10"
+
+# Colores y UX en terminal
+colored = "2.1"
+indicatif = "0.17"
+console = "0.15"
+
+# Utilidades de sistema de archivos
+walkdir = "2.5"
+dirs = "5.0"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Manejo de errores
+thiserror = "1.0"
+anyhow = "1.0"
+
+# XML parser (para POMs de Maven)
+quick-xml = { version = "0.37", features = ["serialize"] }

@@ -1,0 +1,25 @@
+# Plantilla para proyecto Kotlin — generada por FORGE
+
+[project]
+name = "mi-proyecto-kotlin"
+version = "0.1.0"
+lang = "kotlin"
+description = "Proyecto Kotlin creado con FORGE"
+output_dir = "build"
+
+[kotlin]
+source = "src/main/kotlin"
+jvm_target = "17"
+main-class = "MainKt"
+
+# Dependencias de Maven Central (formato: "groupId:artifactId" = "versión")
+[dependencies]
+# Ejemplo:
+# "org.jetbrains.kotlinx:kotlinx-coroutines-core" = "1.8.0"
+# "com.google.guava:guava" = "33.0.0-jre"
+
+# Tareas personalizadas
+[tasks]
+# [tasks.mi-tarea]
+# command = "echo Mi tarea personalizada"
+# depends-on = ["build"]

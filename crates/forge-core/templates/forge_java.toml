@@ -1,0 +1,25 @@
+# Plantilla para proyecto Java — generada por FORGE
+
+[project]
+name = "mi-proyecto-java"
+version = "0.1.0"
+lang = "java"
+description = "Proyecto Java creado con FORGE"
+output_dir = "build"
+
+[java]
+source = "src/main/java"
+target = "17"
+main-class = "Main"
+
+# Dependencias de Maven Central (formato: "groupId:artifactId" = "versión")
+[dependencies]
+# Ejemplo:
+# "com.google.guava:guava" = "33.0.0-jre"
+# "org.slf4j:slf4j-api" = "2.0.9"
+
+# Tareas personalizadas
+[tasks]
+# [tasks.mi-tarea]
+# command = "echo Mi tarea personalizada"
+# depends-on = ["build"]

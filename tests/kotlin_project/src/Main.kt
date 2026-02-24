@@ -1,0 +1,15 @@
+fun main() {
+    println("========================================")
+    println("  🔥 FORGE — Proyecto Kotlin de Ejemplo")
+    println("========================================")
+    println()
+    println("  ✅ ¡La compilación con FORGE funciona!")
+    println("  ⚡ Compilado con kotlinc via FORGE")
+    println("  🦀 Build system escrito en Rust")
+    println()
+    println("  JVM Version: ${System.getProperty("java.version")}")
+    println("  Kotlin Version: ${KotlinVersion.CURRENT}")
+    println("  OS: ${System.getProperty("os.name")}")
+    println()
+    println("========================================")
+}

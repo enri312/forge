@@ -1,0 +1,13 @@
+[project]
+name = "ejemplo-python"
+version = "1.0.0"
+lang = "python"
+description = "Proyecto Python de ejemplo para probar FORGE"
+
+[python]
+source = "src"
+main-script = "main.py"
+
+[dependencies]
+
+[tasks]

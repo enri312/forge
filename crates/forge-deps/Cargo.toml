@@ -1,0 +1,21 @@
+[package]
+name = "forge-deps"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Resolución de dependencias para FORGE: Maven Central y PyPI"
+
+[dependencies]
+forge-core = { path = "../forge-core" }
+
+serde.workspace = true
+serde_json.workspace = true
+reqwest.workspace = true
+tokio.workspace = true
+dirs.workspace = true
+tracing.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true
+quick-xml.workspace = true
+colored.workspace = true

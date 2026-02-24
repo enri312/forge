@@ -1,0 +1,14 @@
+[project]
+name = "ejemplo-java"
+version = "1.0.0"
+lang = "java"
+description = "Proyecto Java de ejemplo para probar FORGE"
+
+[java]
+source = "src"
+target = "17"
+main-class = "Main"
+
+[dependencies]
+
+[tasks]

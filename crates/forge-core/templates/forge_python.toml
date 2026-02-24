@@ -1,0 +1,30 @@
+# Plantilla para proyecto Python — generada por FORGE
+
+[project]
+name = "mi-proyecto-python"
+version = "0.1.0"
+lang = "python"
+description = "Proyecto Python creado con FORGE"
+output_dir = "build"
+
+[python]
+source = "src"
+main-script = "main.py"
+# python_version = "3.12"
+
+# Dependencias de PyPI (formato: "nombre" = "versión" o "*" para última)
+[dependencies]
+# Ejemplo:
+# "requests" = "2.31.0"
+# "flask" = "*"
+# "numpy" = "1.26.0"
+
+# Tareas personalizadas
+[tasks]
+# [tasks.lint]
+# command = "python -m flake8 src/"
+# description = "Verificar estilo de código"
+
+# [tasks.format]
+# command = "python -m black src/"
+# description = "Formatear código"

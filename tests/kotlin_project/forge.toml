@@ -1,0 +1,14 @@
+[project]
+name = "ejemplo-kotlin"
+version = "1.0.0"
+lang = "kotlin"
+description = "Proyecto Kotlin de ejemplo para probar FORGE"
+
+[kotlin]
+source = "src"
+jvm_target = "17"
+main-class = "MainKt"
+
+[dependencies]
+
+[tasks]
