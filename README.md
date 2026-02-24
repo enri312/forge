@@ -47,10 +47,14 @@
 ### 1. Instalar FORGE
 
 ```bash
-# Prerrequisito: tener Rust instalado (https://rustup.rs)
-git clone https://github.com/enri312/forge.git
-cd forge
-cargo install --path crates/forge-cli
+# Para sistemas UNIX (Linux / macOS)
+curl -fsSL https://raw.githubusercontent.com/enri312/forge/main/install.sh | bash
+
+# Para sistemas Windows (PowerShell)
+iwr https://raw.githubusercontent.com/enri312/forge/main/install.ps1 -useb | iex
+
+# Instalación vía Cargo Native (requiere Rust)
+cargo install forge-cli
 ```
 
 ### 2. Crear un Proyecto
@@ -238,12 +242,10 @@ forge/
 
 ### Ideas para Contribuir
 
-- 🦀 **Nuevos lenguajes**: C/C++, Go, TypeScript
-- 🧪 **Test runners**: JUnit para Java/Kotlin, pytest mejorado
-- 📦 **Plugin system**: Sistema de plugins dinámicos
-- 🌐 **Caché remoto**: Compartir builds entre equipos
--  **Docker support**: Builds en contenedores
-- 📝 **IDE plugins**: Integración con VS Code, IntelliJ
+- 🦀 **Nuevos lenguajes**: C/C++, TypeScript
+- 📦 **Plugin system basados en WebAssembly (WASM)**
+-  **Docker support**: Builds nativos en contenedores
+- 📝 **Dashboard Web GUI**: UI gráfica del DAG
 
 ---
 
@@ -262,8 +264,12 @@ forge/
 - [x] **v0.2.0** — Test runners nativos (Aislacion de descargas de tests unitarios, auto-descarga global de JUnit 6 Console, setup nativo virtualenv pytest/unittest e integracion CLI)
 - [x] **v0.3.0** — Generador de setups `forge ide` y Extensión básica de VS Code
 - [x] **v0.4.0** — Hooks de ciclo de vida, dependencias transitivas Maven, multi-módulo, `forge fmt` y `forge lint`
-- [ ] **v0.5.0** — Caché remoto distribuido
-- [ ] **v0.5.0** — Language Server Protocol (LSP) para `forge.toml` y configurador dinámico
+- [x] **v0.5.0** — Caché remoto distribuido (S3/HTTP) con subida automática
+- [x] **v0.6.0** — Servidor oficial LSP (Language Server Protocol) para `forge.toml`
+
+### En desarrollo (Próximamente)
+- [ ] **v1.0.0** — **Fase 17:** Adopción Pública y Plugins (WebAssembly / Extism)
+- [ ] Publicación en `crates.io` y gestores comunitarios (Homebrew, Scoop)
 
 ---
 

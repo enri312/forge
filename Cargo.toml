@@ -9,13 +9,16 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.1.0"
+version = "0.6.0"
 edition = "2021"
 authors = ["SkyShoot <enri312>"]
 license = "MIT"
 description = "🔥 FORGE — Build system de nueva generación"
 homepage = "https://github.com/enri312/forge"
 repository = "https://github.com/enri312/forge"
+readme = "README.md"
+keywords = ["build-tool", "cli", "java", "python", "kotlin"]
+categories = ["development-tools::build-utils", "command-line-utilities"]
 
 [workspace.dependencies]
 # Serialización y configuración
@@ -62,3 +65,6 @@ ctrlc = "3.4"
 
 # Language Server Protocol (LSP)
 tower-lsp = "0.20.0"
+
+# WebAssembly Plugin System (Extism)
+extism = "1.8.0"
