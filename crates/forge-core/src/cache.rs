@@ -177,7 +177,14 @@ impl BuildCache {
             path: output_path.clone(),
             message: format!("Error al comprimir caché: {}", e),
         })?;
-        tar.into_inner().unwrap().finish().unwrap();
+        let enc = tar.into_inner().map_err(|e| ForgeError::IoError {
+            path: output_path.clone(),
+            message: format!("Error interno al procesar tar: {}", e),
+        })?;
+        enc.finish().map_err(|e| ForgeError::IoError {
+            path: output_path.clone(),
+            message: format!("Error interno al finalizar tar.gz: {}", e),
+        })?;
 
         // 3. Subir vía HTTP PUT
         let client = Client::new();
@@ -186,7 +193,10 @@ impl BuildCache {
             req = req.bearer_auth(token);
         }
 
-        let file_bytes = std::fs::read(&tar_gz_path).unwrap();
+        let file_bytes = std::fs::read(&tar_gz_path).map_err(|e| ForgeError::IoError {
+            path: tar_gz_path.clone(),
+            message: format!("Error leyendo gzip temporal: {}", e),
+        })?;
         let res: Result<reqwest::Response, reqwest::Error> = req.body(file_bytes).send().await;
         let _ = std::fs::remove_file(&tar_gz_path); // Limpiar tmp local
 
@@ -228,14 +238,23 @@ impl BuildCache {
             Ok(resp) if resp.status().is_success() => {
                 println!("   {} Caché distribuido encontrado ({})", "☁️".cyan(), master_hash);
                 
-                let bytes = resp.bytes().await.unwrap();
+                let bytes = match resp.bytes().await {
+                    Ok(b) => b,
+                    Err(e) => {
+                        eprintln!("   {} Error descargando cuerpo del caché: {}", "⚠️".yellow(), e);
+                        return Ok(false);
+                    }
+                };
                 
                 // Extraer
                 let output_path = project_dir.join(output_dir_name);
                 if output_path.exists() {
                      let _ = std::fs::remove_dir_all(&output_path);
                 }
-                std::fs::create_dir_all(&output_path).unwrap();
+                if let Err(e) = std::fs::create_dir_all(&output_path) {
+                     eprintln!("   {} Error configurando directorio de caché: {}", "⚠️".yellow(), e);
+                     return Ok(false);
+                }
 
                 let tar_gz = std::io::Cursor::new(bytes);
                 let tar = GzDecoder::new(tar_gz);
@@ -247,7 +266,7 @@ impl BuildCache {
                 }
 
                 println!("   {} Caché remoto restaurado en {}", "⚡".green(), output_dir_name);
-                return Ok(true);
+                Ok(true)
             }
             _ => {
                 // Not found o error ("Miss")

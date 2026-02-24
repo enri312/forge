@@ -4,6 +4,7 @@
     "description": "Official extension for the FORGE Build System",
     "version": "0.1.0",
     "publisher": "enri312",
+    "icon": "images/forge-logo-dark.png",
     "engines": {
         "vscode": "^1.80.0"
     },
@@ -16,6 +17,13 @@
     ],
     "main": "./out/extension.js",
     "contributes": {
+        "iconThemes": [
+            {
+                "id": "forge-icons",
+                "label": "Forge File & Folder Icons",
+                "path": "./forge-icon-theme.json"
+            }
+        ],
         "commands": [
             {
                 "command": "forge.build",

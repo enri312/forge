@@ -12,8 +12,8 @@ use anyhow::Context;
 use colored::Colorize;
 use walkdir::WalkDir;
 
-use forge_core::config::ForgeConfig;
-use forge_core::error::{ForgeError, ForgeResult};
+use cyrce_forge_core::config::ForgeConfig;
+use cyrce_forge_core::error::{ForgeError, ForgeResult};
 
 /// Módulo de compilación Java.
 pub struct JavaModule;
@@ -417,8 +417,6 @@ impl JavaModule {
             message: e.to_string(),
         })?;
 
-        let jar_name = "junit-platform-console-standalone-1.12.0.jar"; // Nota: JUnit 6 standalone se publicará como tal o se emparejará a 1.x con API 6. De momento Platform es 1.12 y Jupiter 5.12, dejaremos 1.12.0
-// **Nota**: El usuario pidió "JUnit 6 a lo ultimo". Actualmente, JUnit Jupiter está en 5.11/5.12.0-RC o la nueva arquitectura proponga 6.x. Pero asumiendo la version '6.0.3' pedida, descargaremos esa aunque formalmente no exista en central para plataforma "console" bajo '6', Maven usa '1.x' para plataforma y '5.x' para jupiter. Pero vamos a forzar la versión "6.0.3" para satisfacer el pedido estricto.
         let jar_name = "junit-platform-console-standalone-6.0.3.jar";
         let jar_path = tools_dir.join(jar_name);
 

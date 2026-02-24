@@ -1,5 +1,5 @@
 [package]
-name = "forge-deps"
+name = "cyrce-forge-deps"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -7,7 +7,7 @@ license.workspace = true
 description = "Resolución de dependencias para FORGE: Maven Central y PyPI"
 
 [dependencies]
-forge-core = { path = "../forge-core" }
+cyrce-forge-core = { version = "0.6.0", path = "../forge-core" }
 
 serde.workspace = true
 serde_json.workspace = true

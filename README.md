@@ -1,4 +1,7 @@
-# 🔥 FORGE — Build System de Nueva Generación
+<div align="center">
+  <img src="assets/forge-logo-dark.png" alt="Forge Build System Logo" width="350"/>
+  <h1>🔥 FORGE — The Next-Gen Cargo-like Build System</h1>
+</div>
 
 <div align="center">
 
@@ -54,7 +57,7 @@ curl -fsSL https://raw.githubusercontent.com/enri312/forge/main/install.sh | bas
 iwr https://raw.githubusercontent.com/enri312/forge/main/install.ps1 -useb | iex
 
 # Instalación vía Cargo Native (requiere Rust)
-cargo install forge-cli
+cargo install cyrce-forge-cli
 ```
 
 ### 2. Crear un Proyecto

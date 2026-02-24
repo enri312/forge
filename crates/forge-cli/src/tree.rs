@@ -7,7 +7,7 @@
 
 use std::path::PathBuf;
 use colored::Colorize;
-use forge_core::config::ForgeConfig;
+use cyrce_forge_core::config::ForgeConfig;
 
 pub async fn cmd_tree(project_dir: &PathBuf) -> anyhow::Result<()> {
     let config = ForgeConfig::load(project_dir)?;

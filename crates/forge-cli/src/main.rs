@@ -20,15 +20,15 @@ use anyhow::Context;
 use clap::{CommandFactory, Parser, Subcommand};
 use colored::Colorize;
 
-use forge_core::cache::BuildCache;
-use forge_core::config::ForgeConfig;
+use cyrce_forge_core::cache::BuildCache;
+use cyrce_forge_core::config::ForgeConfig;
 
-use forge_deps::maven::MavenResolver;
-use forge_deps::pypi::PypiResolver;
+use cyrce_forge_deps::maven::MavenResolver;
+use cyrce_forge_deps::pypi::PypiResolver;
 
-use forge_langs::java::JavaModule;
-use forge_langs::kotlin::KotlinModule;
-use forge_langs::python::PythonModule;
+use cyrce_forge_langs::java::JavaModule;
+use cyrce_forge_langs::kotlin::KotlinModule;
+use cyrce_forge_langs::python::PythonModule;
 
 /// 🔥 FORGE — Build system de nueva generación.
 /// Rápido, simple y multi-lenguaje.
@@ -217,7 +217,7 @@ async fn main() -> anyhow::Result<()> {
         eprintln!("\n{} {}", "❌ Error:".red().bold(), e);
 
         // Intentar extraer sugerencia contextual si es un ForgeError
-        if let Some(forge_err) = e.downcast_ref::<forge_core::error::ForgeError>() {
+        if let Some(forge_err) = e.downcast_ref::<cyrce_forge_core::error::ForgeError>() {
             eprintln!("{}", forge_err.suggestion().yellow());
         } else {
             eprintln!(
@@ -495,7 +495,7 @@ async fn cmd_build(project_dir: &PathBuf, _verbose: bool, release: bool) -> anyh
 
     // 1. Verificación Caché Local
     let source_dir = project_dir.join(config.source_dir());
-    let extensions = forge_langs::extensions_for_lang(&config.project.lang);
+    let extensions = cyrce_forge_langs::extensions_for_lang(&config.project.lang);
     let mut cache = BuildCache::load(project_dir)?;
 
     if !cache.has_changes(&source_dir, extensions)? {
@@ -809,7 +809,7 @@ async fn cmd_watch(project_dir: &PathBuf) -> anyhow::Result<()> {
         "✅ Watcher activo — editá tu código y FORGE recompilará automáticamente\n".green()
     );
 
-    let extensions = forge_langs::extensions_for_lang(&config.project.lang);
+    let extensions = cyrce_forge_langs::extensions_for_lang(&config.project.lang);
 
     while running.load(std::sync::atomic::Ordering::SeqCst) {
         match rx.recv_timeout(std::time::Duration::from_millis(500)) {
@@ -1058,7 +1058,7 @@ async fn cmd_stats(project_dir: &PathBuf) -> anyhow::Result<()> {
         .context("No se encontró forge.toml. ¿Estás en un proyecto FORGE?")?;
 
     let source_dir = project_dir.join(config.source_dir());
-    let extensions = forge_langs::extensions_for_lang(&config.project.lang);
+    let extensions = cyrce_forge_langs::extensions_for_lang(&config.project.lang);
 
     println!("{}", "📊 Estadísticas del Proyecto".bold());
     println!("{}", "─".repeat(45).dimmed());

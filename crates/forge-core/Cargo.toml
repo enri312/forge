@@ -1,5 +1,5 @@
 [package]
-name = "forge-core"
+name = "cyrce-forge-core"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -25,6 +25,3 @@ console.workspace = true
 reqwest.workspace = true
 tar = "0.4.40"
 flate2 = "1.0.30"
-
-# Runtime de Plugins WASM
-extism.workspace = true

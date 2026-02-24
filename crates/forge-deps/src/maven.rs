@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 
 use colored::Colorize;
 
-use forge_core::error::{ForgeError, ForgeResult};
+use cyrce_forge_core::error::{ForgeError, ForgeResult};
 
 /// URL base de Maven Central.
 const MAVEN_CENTRAL_URL: &str = "https://repo1.maven.org/maven2";

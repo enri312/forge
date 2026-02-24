@@ -7,7 +7,7 @@
 
 use colored::Colorize;
 
-use forge_core::error::{ForgeError, ForgeResult};
+use cyrce_forge_core::error::{ForgeError, ForgeResult};
 
 /// URL base de la API JSON de PyPI.
 const PYPI_API_URL: &str = "https://pypi.org/pypi";

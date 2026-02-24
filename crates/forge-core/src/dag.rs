@@ -117,7 +117,7 @@ impl TaskGraph {
                     match states.get(dep.as_str()) {
                         Some(State::InProgress) => {
                             path.push(dep.as_str());
-                            let cycle_start = path.iter().position(|&n| n == dep.as_str()).unwrap();
+                            let cycle_start = path.iter().position(|&n| n == dep.as_str()).unwrap_or(0);
                             let cycle: Vec<&str> = path[cycle_start..].to_vec();
                             return Err(cycle.join(" → "));
                         }

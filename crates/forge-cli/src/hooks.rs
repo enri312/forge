@@ -1,6 +1,6 @@
 use anyhow::Result;
 use colored::*;
-use forge_core::config::HooksConfig;
+use cyrce_forge_core::config::HooksConfig;
 use std::path::Path;
 
 /// Ejecuta una lista de hooks (comandos shell) con un label descriptivo.

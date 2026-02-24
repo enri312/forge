@@ -1,6 +1,6 @@
 use anyhow::Result;
 use colored::*;
-use forge_core::config::ForgeConfig;
+use cyrce_forge_core::config::ForgeConfig;
 use std::fs;
 use std::path::Path;
 

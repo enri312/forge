@@ -63,6 +63,12 @@ quick-xml = { version = "0.37", features = ["serialize"] }
 notify = { version = "7.0", features = ["macos_kqueue"] }
 ctrlc = "3.4"
 
+# Dependencias Internas (FORGE crates)
+cyrce-forge-core = { version = "0.6.0", path = "crates/forge-core" }
+cyrce-forge-deps = { version = "0.6.0", path = "crates/forge-deps" }
+cyrce-forge-langs = { version = "0.6.0", path = "crates/forge-langs" }
+cyrce-forge-lsp = { version = "0.6.0", path = "crates/forge-lsp" }
+
 # Language Server Protocol (LSP)
 tower-lsp = "0.20.0"
 

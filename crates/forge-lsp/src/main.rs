@@ -90,7 +90,7 @@ impl ForgeBackend {
             Ok(_) => {
                 // Sintaxis válida, ahora validar contra la estructura de ForgeConfig
                 // Usamos un mock path ya que solo parseamos el string
-                let mock_path = PathBuf::from("forge.toml");
+                let _mock_path = PathBuf::from("forge.toml");
                 
                 // TODO: ForgeConfig::load lee del disco, necesitamos parsear del texto
                 // Para MVP publicaremos un diagnotico básico si falla el parseo crudo

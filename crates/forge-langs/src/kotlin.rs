@@ -11,8 +11,8 @@ use anyhow::Context;
 use colored::Colorize;
 use walkdir::WalkDir;
 
-use forge_core::config::ForgeConfig;
-use forge_core::error::{ForgeError, ForgeResult};
+use cyrce_forge_core::config::ForgeConfig;
+use cyrce_forge_core::error::{ForgeError, ForgeResult};
 
 /// Módulo de compilación Kotlin.
 pub struct KotlinModule;

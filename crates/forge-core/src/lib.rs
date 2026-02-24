@@ -9,4 +9,3 @@ pub mod config;
 pub mod dag;
 pub mod error;
 pub mod executor;
-pub mod plugins;

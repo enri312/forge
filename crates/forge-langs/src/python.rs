@@ -9,8 +9,8 @@ use std::process::Stdio;
 
 use colored::Colorize;
 
-use forge_core::config::ForgeConfig;
-use forge_core::error::{ForgeError, ForgeResult};
+use cyrce_forge_core::config::ForgeConfig;
+use cyrce_forge_core::error::{ForgeError, ForgeResult};
 
 /// Módulo de gestión Python.
 pub struct PythonModule;

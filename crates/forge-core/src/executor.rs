@@ -125,7 +125,7 @@ impl Executor {
                         .template("   {spinner:.cyan} {msg}")
                         .unwrap(),
                 );
-                pb.set_message(format!("{}", task.name));
+                pb.set_message(task.name.to_string());
 
                 handles.push(tokio::spawn(async move {
                     let result = execute_single_task(&task, &project_dir, verbose, &pb).await;

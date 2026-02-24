@@ -1,6 +1,6 @@
 use anyhow::Result;
 use colored::*;
-use forge_core::config::ForgeConfig;
+use cyrce_forge_core::config::ForgeConfig;
 use std::path::Path;
 
 /// Formatea el código fuente del proyecto usando la herramienta nativa del lenguaje.

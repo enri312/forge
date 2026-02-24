@@ -1,0 +1,34 @@
+{
+    "iconDefinitions": {
+        "forge-file": {
+            "iconPath": "./images/forge-file-icon.svg"
+        },
+        "forge-folder": {
+            "iconPath": "./images/folder-forge.svg"
+        },
+        "forge-folder-open": {
+            "iconPath": "./images/folder-forge-open.svg"
+        }
+    },
+    "fileNames": {
+        "forge.toml": "forge-file"
+    },
+    "folderNames": {
+        ".forge": "forge-folder",
+        "crates": "forge-folder",
+        "forge-cli": "forge-folder",
+        "forge-core": "forge-folder",
+        "forge-deps": "forge-folder",
+        "forge-langs": "forge-folder",
+        "forge-lsp": "forge-folder"
+    },
+    "folderNamesExpanded": {
+        ".forge": "forge-folder-open",
+        "crates": "forge-folder-open",
+        "forge-cli": "forge-folder-open",
+        "forge-core": "forge-folder-open",
+        "forge-deps": "forge-folder-open",
+        "forge-langs": "forge-folder-open",
+        "forge-lsp": "forge-folder-open"
+    }
+}

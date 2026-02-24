@@ -46,10 +46,6 @@ pub struct ForgeConfig {
     #[serde(default)]
     pub modules: Vec<String>,
 
-    /// Plugins WebAssembly instalados (Fase 17)
-    #[serde(default)]
-    pub plugins: HashMap<String, String>,
-
     /// Configuración de caché distribuido (Fase 16)
     pub cache: Option<RemoteCacheConfig>,
 }
