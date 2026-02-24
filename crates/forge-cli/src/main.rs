@@ -55,6 +55,16 @@ enum Commands {
         lang: String,
     },
 
+    /// 📁 Crear un nuevo proyecto en una carpeta nueva
+    New {
+        /// Nombre del proyecto (se crea como carpeta)
+        name: String,
+
+        /// Lenguaje del proyecto: java, kotlin, python
+        #[arg(short, long, default_value = "java")]
+        lang: String,
+    },
+
     /// 🔨 Compilar el proyecto
     Build,
 
@@ -72,6 +82,15 @@ enum Commands {
 
     /// ℹ️  Mostrar información del proyecto
     Info,
+
+    /// 👁️ Vigilar cambios y recompilar automáticamente
+    Watch,
+
+    /// ⚙️ Ejecutar una tarea personalizada del forge.toml
+    Task {
+        /// Nombre de la tarea a ejecutar
+        name: String,
+    },
 
     /// 🐚 Generar autocompletado para tu shell
     Completions {
@@ -117,12 +136,15 @@ async fn main() -> anyhow::Result<()> {
     let start = Instant::now();
     let result = match cli.command {
         Commands::Init { lang } => cmd_init(&project_dir, &lang).await,
+        Commands::New { name, lang } => cmd_new(&project_dir, &name, &lang).await,
         Commands::Build => cmd_build(&project_dir, cli.verbose).await,
         Commands::Run => cmd_run(&project_dir, cli.verbose).await,
         Commands::Test => cmd_test(&project_dir, cli.verbose).await,
         Commands::Clean => cmd_clean(&project_dir).await,
         Commands::Deps => cmd_deps(&project_dir).await,
         Commands::Info => cmd_info(&project_dir).await,
+        Commands::Watch => cmd_watch(&project_dir).await,
+        Commands::Task { name } => cmd_task(&project_dir, &name).await,
         Commands::Completions { shell } => {
             let mut cmd = Cli::command();
             clap_complete::generate(shell, &mut cmd, "forge", &mut std::io::stdout());
@@ -498,5 +520,220 @@ fn print_tool_version(name: &str, cmd: &str, args: &[&str]) {
             );
         }
     }
+}
+
+/// Comando: forge new <nombre>
+async fn cmd_new(parent_dir: &PathBuf, name: &str, lang: &str) -> anyhow::Result<()> {
+    let project_dir = parent_dir.join(name);
+
+    if project_dir.exists() {
+        return Err(anyhow::anyhow!(
+            "El directorio '{}' ya existe",
+            project_dir.display()
+        ));
+    }
+
+    println!(
+        "{}",
+        format!("📁 Creando proyecto '{}' ({})...", name, lang).bold()
+    );
+
+    std::fs::create_dir_all(&project_dir)?;
+    cmd_init(&project_dir, lang).await?;
+
+    println!(
+        "\n{}",
+        format!("💡 Para empezar: cd {} && forge build", name)
+            .cyan()
+            .bold()
+    );
+
+    Ok(())
+}
+
+/// Comando: forge watch
+async fn cmd_watch(project_dir: &PathBuf) -> anyhow::Result<()> {
+    use notify::{Config, RecommendedWatcher, RecursiveMode, Watcher, Event, EventKind};
+    use std::sync::mpsc;
+
+    let config = ForgeConfig::load(project_dir)?;
+    let source_dir = project_dir.join(config.source_dir());
+
+    if !source_dir.exists() {
+        return Err(anyhow::anyhow!(
+            "Directorio de código fuente no encontrado: {}",
+            source_dir.display()
+        ));
+    }
+
+    println!(
+        "{}",
+        format!(
+            "👁️ Vigilando cambios en {} (Ctrl+C para detener)...",
+            config.source_dir()
+        )
+        .cyan()
+        .bold()
+    );
+
+    // Build inicial
+    println!("{}", "\n── Build inicial ──".dimmed());
+    if let Err(e) = cmd_build(project_dir, false).await {
+        eprintln!("   {} {}", "⚠️  Error en build:".yellow(), e);
+    }
+
+    // Configurar watcher
+    let (tx, rx) = mpsc::channel::<notify::Result<Event>>();
+    let mut watcher = RecommendedWatcher::new(tx, Config::default())?;
+    watcher.watch(&source_dir, RecursiveMode::Recursive)?;
+
+    // Configurar Ctrl+C
+    let running = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(true));
+    let r = running.clone();
+    ctrlc::set_handler(move || {
+        r.store(false, std::sync::atomic::Ordering::SeqCst);
+    })?;
+
+    println!(
+        "{}",
+        "✅ Watcher activo — editá tu código y FORGE recompilará automáticamente\n".green()
+    );
+
+    let extensions = forge_langs::extensions_for_lang(&config.project.lang);
+
+    while running.load(std::sync::atomic::Ordering::SeqCst) {
+        match rx.recv_timeout(std::time::Duration::from_millis(500)) {
+            Ok(Ok(event)) => {
+                // Solo recompilar si son archivos relevantes
+                let is_relevant = event.paths.iter().any(|p| {
+                    if let Some(ext) = p.extension() {
+                        extensions.iter().any(|e| ext == *e)
+                    } else {
+                        false
+                    }
+                });
+
+                if is_relevant && matches!(event.kind, EventKind::Modify(_) | EventKind::Create(_)) {
+                    let changed_files: Vec<String> = event
+                        .paths
+                        .iter()
+                        .filter_map(|p| p.file_name())
+                        .map(|f| f.to_string_lossy().to_string())
+                        .collect();
+
+                    println!(
+                        "\n{}",
+                        format!(
+                            "🔄 Cambios detectados: {} — Recompilando...",
+                            changed_files.join(", ")
+                        )
+                        .yellow()
+                        .bold()
+                    );
+
+                    let start = Instant::now();
+                    match cmd_build(project_dir, false).await {
+                        Ok(_) => {
+                            println!(
+                                "{}",
+                                format!(
+                                    "✅ Build exitoso en {:.2}s — Esperando más cambios...\n",
+                                    start.elapsed().as_secs_f64()
+                                )
+                                .green()
+                            );
+                        }
+                        Err(e) => {
+                            eprintln!(
+                                "{}",
+                                format!("❌ Error: {} — Corrige y guarda de nuevo\n", e).red()
+                            );
+                        }
+                    }
+                }
+            }
+            Ok(Err(e)) => {
+                eprintln!("   {} {}", "⚠️  Error del watcher:".yellow(), e);
+            }
+            Err(mpsc::RecvTimeoutError::Timeout) => {}
+            Err(mpsc::RecvTimeoutError::Disconnected) => break,
+        }
+    }
+
+    println!("\n{}", "👋 Watch mode detenido".dimmed());
+    Ok(())
+}
+
+/// Comando: forge task <nombre>
+async fn cmd_task(project_dir: &PathBuf, task_name: &str) -> anyhow::Result<()> {
+    let config = ForgeConfig::load(project_dir)?;
+
+    let task = config
+        .tasks
+        .get(task_name)
+        .ok_or_else(|| {
+            let available: Vec<&String> = config.tasks.keys().collect();
+            if available.is_empty() {
+                anyhow::anyhow!(
+                    "No hay tareas definidas en forge.toml. Agrega una sección [tasks.{}]",
+                    task_name
+                )
+            } else {
+                anyhow::anyhow!(
+                    "Tarea '{}' no encontrada. Disponibles: {}",
+                    task_name,
+                    available
+                        .iter()
+                        .map(|s| s.as_str())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            }
+        })?;
+
+    println!(
+        "{}",
+        format!("⚙️  Ejecutando tarea: {}", task_name).bold()
+    );
+    println!("   {} {}", "Comando:".dimmed(), task.command);
+
+    // Ejecutar el comando
+    let output = if cfg!(target_os = "windows") {
+        std::process::Command::new("cmd")
+            .args(["/C", &task.command])
+            .current_dir(project_dir)
+            .output()?
+    } else {
+        std::process::Command::new("sh")
+            .args(["-c", &task.command])
+            .current_dir(project_dir)
+            .output()?
+    };
+
+    // Mostrar salida
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+
+    if !stdout.is_empty() {
+        println!("\n{}", stdout.trim());
+    }
+    if !stderr.is_empty() {
+        eprintln!("{}", stderr.trim());
+    }
+
+    if output.status.success() {
+        println!(
+            "\n{}",
+            format!("✅ Tarea '{}' completada", task_name).green().bold()
+        );
+    } else {
+        return Err(anyhow::anyhow!(
+            "La tarea '{}' falló con código {}",
+            task_name,
+            output.status.code().unwrap_or(-1)
+        ));
+    }
+
+    Ok(())
 }
 

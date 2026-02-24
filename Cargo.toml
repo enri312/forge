@@ -54,3 +54,7 @@ anyhow = "1.0"
 
 # XML parser (para POMs de Maven)
 quick-xml = { version = "0.37", features = ["serialize"] }
+
+# File watching (watch mode)
+notify = { version = "7.0", features = ["macos_kqueue"] }
+ctrlc = "3.4"

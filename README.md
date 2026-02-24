@@ -2,6 +2,8 @@
 
 <div align="center">
 
+<img src="assets/forge-icon.svg" width="120" alt="FORGE Logo">
+
 ```
    ███████╗ ██████╗ ██████╗  ██████╗ ███████╗
    ██╔════╝██╔═══██╗██╔══██╗██╔════╝ ██╔════╝
