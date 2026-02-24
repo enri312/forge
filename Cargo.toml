@@ -10,9 +10,11 @@ resolver = "2"
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
-authors = ["FORGE Contributors"]
+authors = ["SkyShoot <enri312>"]
 license = "MIT"
-description = "🔥 FORGE — Build system de nueva generación. Rápido, simple y multi-lenguaje."
+description = "🔥 FORGE — Build system de nueva generación"
+homepage = "https://github.com/enri312/forge"
+repository = "https://github.com/enri312/forge"
 
 [workspace.dependencies]
 # Serialización y configuración
@@ -22,6 +24,7 @@ toml = "0.8"
 
 # CLI
 clap = { version = "4.5", features = ["derive", "color"] }
+clap_complete = "4.5"
 
 # Async runtime
 tokio = { version = "1.36", features = ["full"] }

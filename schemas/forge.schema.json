@@ -1,0 +1,132 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "FORGE Build Configuration",
+  "description": "Esquema de configuración para forge.toml — Build system FORGE",
+  "type": "object",
+  "required": ["project"],
+  "properties": {
+    "project": {
+      "type": "object",
+      "description": "Metadatos del proyecto",
+      "required": ["name", "lang"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Nombre del proyecto"
+        },
+        "version": {
+          "type": "string",
+          "description": "Versión del proyecto (ej: 1.0.0)",
+          "default": "0.1.0",
+          "pattern": "^\\d+\\.\\d+\\.\\d+.*$"
+        },
+        "lang": {
+          "type": "string",
+          "description": "Lenguaje principal del proyecto",
+          "enum": ["java", "kotlin", "python"]
+        },
+        "description": {
+          "type": "string",
+          "description": "Descripción breve del proyecto"
+        },
+        "output_dir": {
+          "type": "string",
+          "description": "Directorio de salida de compilación",
+          "default": "build"
+        }
+      }
+    },
+    "java": {
+      "type": "object",
+      "description": "Configuración para proyectos Java",
+      "properties": {
+        "source": {
+          "type": "string",
+          "description": "Directorio de código fuente Java",
+          "default": "src/main/java"
+        },
+        "target": {
+          "type": "string",
+          "description": "Versión objetivo del JDK (ej: 17, 21, 25)",
+          "default": "17",
+          "enum": ["8", "11", "17", "21", "22", "23", "24", "25"]
+        },
+        "main-class": {
+          "type": "string",
+          "description": "Clase principal con método main (ej: com.ejemplo.Main)"
+        }
+      }
+    },
+    "kotlin": {
+      "type": "object",
+      "description": "Configuración para proyectos Kotlin",
+      "properties": {
+        "source": {
+          "type": "string",
+          "description": "Directorio de código fuente Kotlin",
+          "default": "src/main/kotlin"
+        },
+        "jvm_target": {
+          "type": "string",
+          "description": "Versión objetivo de la JVM",
+          "default": "17"
+        },
+        "main-class": {
+          "type": "string",
+          "description": "Clase principal con método main (ej: MainKt)"
+        }
+      }
+    },
+    "python": {
+      "type": "object",
+      "description": "Configuración para proyectos Python",
+      "properties": {
+        "source": {
+          "type": "string",
+          "description": "Directorio de código fuente Python",
+          "default": "src"
+        },
+        "main-script": {
+          "type": "string",
+          "description": "Script principal de entrada (ej: main.py)"
+        },
+        "python_version": {
+          "type": "string",
+          "description": "Versión de Python requerida (ej: 3.12, 3.14)"
+        }
+      }
+    },
+    "dependencies": {
+      "type": "object",
+      "description": "Dependencias del proyecto. Java/Kotlin: 'groupId:artifactId' = 'versión'. Python: 'nombre' = 'versión'",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "tasks": {
+      "type": "object",
+      "description": "Tareas personalizadas",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["command"],
+        "properties": {
+          "command": {
+            "type": "string",
+            "description": "Comando a ejecutar"
+          },
+          "depends-on": {
+            "type": "array",
+            "description": "Tareas de las que depende esta tarea",
+            "items": {
+              "type": "string"
+            }
+          },
+          "description": {
+            "type": "string",
+            "description": "Descripción de la tarea"
+          }
+        }
+      }
+    }
+  }
+}

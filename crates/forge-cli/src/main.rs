@@ -6,9 +6,10 @@
 // =============================================================================
 
 use std::path::PathBuf;
+use std::time::Instant;
 
 use anyhow::Context;
-use clap::{Parser, Subcommand};
+use clap::{CommandFactory, Parser, Subcommand};
 use colored::Colorize;
 
 use forge_core::cache::BuildCache;
@@ -29,7 +30,7 @@ use forge_langs::python::PythonModule;
     version,
     about = "🔥 FORGE — Build system de nueva generación",
     long_about = "FORGE es un build system moderno escrito en Rust.\nSoporta Java, Kotlin y Python con compilación incremental,\nejecución paralela y una configuración simple en TOML.",
-    after_help = "Ejemplos:\n  forge init java      Crear proyecto Java\n  forge build           Compilar el proyecto\n  forge run             Compilar y ejecutar\n  forge test            Ejecutar tests\n  forge clean           Limpiar artefactos\n\n🌐 https://github.com/forge-build/forge"
+    after_help = "Ejemplos:\n  forge init java      Crear proyecto Java\n  forge build           Compilar el proyecto\n  forge run             Compilar y ejecutar\n  forge test            Ejecutar tests\n  forge clean           Limpiar artefactos\n\n🌐 https://github.com/enri312/forge"
 )]
 struct Cli {
     /// Comando a ejecutar
@@ -71,6 +72,13 @@ enum Commands {
 
     /// ℹ️  Mostrar información del proyecto
     Info,
+
+    /// 🐚 Generar autocompletado para tu shell
+    Completions {
+        /// Shell objetivo: bash, zsh, fish, powershell
+        #[arg(value_enum)]
+        shell: clap_complete::Shell,
+    },
 }
 
 #[tokio::main]
@@ -106,6 +114,7 @@ async fn main() -> anyhow::Result<()> {
     print_banner();
 
     // Ejecutar comando
+    let start = Instant::now();
     let result = match cli.command {
         Commands::Init { lang } => cmd_init(&project_dir, &lang).await,
         Commands::Build => cmd_build(&project_dir, cli.verbose).await,
@@ -114,6 +123,11 @@ async fn main() -> anyhow::Result<()> {
         Commands::Clean => cmd_clean(&project_dir).await,
         Commands::Deps => cmd_deps(&project_dir).await,
         Commands::Info => cmd_info(&project_dir).await,
+        Commands::Completions { shell } => {
+            let mut cmd = Cli::command();
+            clap_complete::generate(shell, &mut cmd, "forge", &mut std::io::stdout());
+            Ok(())
+        }
     };
 
     if let Err(e) = &result {
@@ -123,6 +137,14 @@ async fn main() -> anyhow::Result<()> {
             "   Usa 'forge --help' para ver los comandos disponibles.".dimmed()
         );
         std::process::exit(1);
+    }
+
+    let elapsed = start.elapsed();
+    if elapsed.as_millis() > 100 {
+        println!(
+            "{}",
+            format!("⏱️  Completado en {:.2}s", elapsed.as_secs_f64()).dimmed()
+        );
     }
 
     Ok(())
@@ -430,6 +452,51 @@ async fn cmd_info(project_dir: &PathBuf) -> anyhow::Result<()> {
         }
     }
 
+    // Mostrar herramientas del sistema
+    println!("\n{}", "🔧 Herramientas del Sistema".bold());
+    print_tool_version("Rust", "rustc", &["--version"]);
+    match config.project.lang.as_str() {
+        "java" => {
+            print_tool_version("Java", "javac", &["--version"]);
+            print_tool_version("JVM", "java", &["--version"]);
+        }
+        "kotlin" => {
+            print_tool_version("Kotlin", "kotlinc", &["-version"]);
+            print_tool_version("JVM", "java", &["--version"]);
+        }
+        "python" => {
+            print_tool_version("Python", "python", &["--version"]);
+            print_tool_version("Pip", "pip", &["--version"]);
+        }
+        _ => {}
+    }
+
     println!();
     Ok(())
 }
+
+/// Imprime la versión de una herramienta del sistema.
+fn print_tool_version(name: &str, cmd: &str, args: &[&str]) {
+    match std::process::Command::new(cmd).args(args).output() {
+        Ok(output) => {
+            let version = String::from_utf8_lossy(&output.stdout);
+            let version = version.trim();
+            if version.is_empty() {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                let version = stderr.lines().next().unwrap_or("").trim();
+                println!("   {} {}", format!("{}:", name).cyan(), version);
+            } else {
+                let first_line = version.lines().next().unwrap_or(version);
+                println!("   {} {}", format!("{}:", name).cyan(), first_line);
+            }
+        }
+        Err(_) => {
+            println!(
+                "   {} {}",
+                format!("{}:", name).cyan(),
+                "No encontrado ❌".red()
+            );
+        }
+    }
+}
+

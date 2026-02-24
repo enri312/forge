@@ -22,7 +22,7 @@ Este documento te guiará a través del proceso para contribuir al proyecto.
 # 1. Fork del repositorio en GitHub
 
 # 2. Clonar tu fork
-git clone https://github.com/TU-USUARIO/forge.git
+git clone https://github.com/enri312/forge.git
 cd forge
 
 # 3. Compilar el proyecto
@@ -163,7 +163,7 @@ test: agregar tests para caché incremental
 
 ## ❓ ¿Preguntas?
 
-- Abre un [Issue en GitHub](https://github.com/forge-build/forge/issues)
+- Abre un [Issue en GitHub](https://github.com/enri312/forge/issues)
 - Únete a las discusiones del proyecto
 
 ¡Gracias por ayudar a forjar el futuro del build tooling! 🔥🦀

@@ -46,7 +46,7 @@
 
 ```bash
 # Prerrequisito: tener Rust instalado (https://rustup.rs)
-git clone https://github.com/tu-usuario/forge.git
+git clone https://github.com/enri312/forge.git
 cd forge
 cargo install --path crates/forge-cli
 ```

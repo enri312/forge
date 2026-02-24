@@ -16,6 +16,7 @@ forge-langs = { path = "../forge-langs" }
 forge-deps = { path = "../forge-deps" }
 
 clap.workspace = true
+clap_complete.workspace = true
 tokio.workspace = true
 colored.workspace = true
 indicatif.workspace = true

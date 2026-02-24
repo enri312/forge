@@ -20,7 +20,7 @@ Esta guía te lleva paso a paso desde la instalación hasta tu primer build con 
 
 ```bash
 # Clonar el repositorio
-git clone https://github.com/tu-usuario/forge.git
+git clone https://github.com/enri312/forge.git
 cd forge
 
 # Compilar e instalar globalmente
