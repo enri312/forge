@@ -166,7 +166,7 @@ impl MavenResolver {
         target_dir: &'a Path,
         downloaded: &'a mut Vec<PathBuf>,
         depth: usize,
-    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ForgeResult<()>> + 'a>> {
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ForgeResult<()>> + Send + 'a>> {
         Box::pin(async move {
             // Límite de profundidad para evitar ciclos
             if depth > 5 {

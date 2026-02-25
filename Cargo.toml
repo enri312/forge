@@ -9,7 +9,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.6.0"
+version = "0.9.0"
 edition = "2021"
 authors = ["SkyShoot <enri312>"]
 license = "MIT"
@@ -64,10 +64,10 @@ notify = { version = "7.0", features = ["macos_kqueue"] }
 ctrlc = "3.4"
 
 # Dependencias Internas (FORGE crates)
-cyrce-forge-core = { version = "0.6.0", path = "crates/forge-core" }
-cyrce-forge-deps = { version = "0.6.0", path = "crates/forge-deps" }
-cyrce-forge-langs = { version = "0.6.0", path = "crates/forge-langs" }
-cyrce-forge-lsp = { version = "0.6.0", path = "crates/forge-lsp" }
+cyrce-forge-core = { version = "0.9.0", path = "crates/forge-core" }
+cyrce-forge-deps = { version = "0.9.0", path = "crates/forge-deps" }
+cyrce-forge-langs = { version = "0.9.0", path = "crates/forge-langs" }
+cyrce-forge-lsp = { version = "0.9.0", path = "crates/forge-lsp" }
 
 # Language Server Protocol (LSP)
 tower-lsp = "0.20.0"

@@ -11,9 +11,9 @@ name = "forge"
 path = "src/main.rs"
 
 [dependencies]
-cyrce-forge-core = { version = "0.6.0", path = "../forge-core" }
-cyrce-forge-langs = { version = "0.6.0", path = "../forge-langs" }
-cyrce-forge-deps = { version = "0.6.0", path = "../forge-deps" }
+cyrce-forge-core = { version = "0.9.0", path = "../forge-core" }
+cyrce-forge-langs = { version = "0.9.0", path = "../forge-langs" }
+cyrce-forge-deps = { version = "0.9.0", path = "../forge-deps" }
 
 clap.workspace = true
 clap_complete.workspace = true

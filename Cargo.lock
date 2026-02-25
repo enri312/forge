@@ -345,7 +345,7 @@ dependencies = [
 
 [[package]]
 name = "cyrce-forge-cli"
-version = "0.6.0"
+version = "0.9.0"
 dependencies = [
  "anyhow",
  "axum",
@@ -372,7 +372,7 @@ dependencies = [
 
 [[package]]
 name = "cyrce-forge-core"
-version = "0.6.0"
+version = "0.9.0"
 dependencies = [
  "anyhow",
  "colored",
@@ -394,7 +394,7 @@ dependencies = [
 
 [[package]]
 name = "cyrce-forge-deps"
-version = "0.6.0"
+version = "0.9.0"
 dependencies = [
  "anyhow",
  "colored",
@@ -411,7 +411,7 @@ dependencies = [
 
 [[package]]
 name = "cyrce-forge-langs"
-version = "0.6.0"
+version = "0.9.0"
 dependencies = [
  "anyhow",
  "colored",
@@ -427,7 +427,7 @@ dependencies = [
 
 [[package]]
 name = "cyrce-forge-lsp"
-version = "0.6.0"
+version = "0.9.0"
 dependencies = [
  "anyhow",
  "cyrce-forge-core",

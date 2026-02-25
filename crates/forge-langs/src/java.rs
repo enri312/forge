@@ -68,8 +68,18 @@ impl JavaModule {
             format!("☕ Compilando {} archivos Java...", java_files.len()).cyan()
         );
 
-        // Construir classpath con dependencias descargadas
-        let classpath = build_classpath(&deps_dir);
+        // Construir classpath con dependencias descargadas y locales (sub-proyectos)
+        let mut classpath = build_classpath(&deps_dir);
+        let local_cp = config.get_local_classpath(project_dir);
+        if !local_cp.is_empty() {
+            let sep = if cfg!(target_os = "windows") { ";" } else { ":" };
+            if classpath.is_empty() {
+                classpath = local_cp;
+            } else {
+                classpath.push_str(sep);
+                classpath.push_str(&local_cp);
+            }
+        }
 
         // Construir comando javac
         let target = java_config
@@ -203,12 +213,14 @@ impl JavaModule {
         let classes_dir = output_dir.join("classes");
         let deps_dir = project_dir.join(".forge").join("deps");
 
-        // Construir classpath: clases compiladas + dependencias
+        // Construir classpath: clases compiladas + dependencias + módulos locales
         let mut cp_parts: Vec<String> = vec![classes_dir.to_string_lossy().to_string()];
+        
         let deps_cp = build_classpath(&deps_dir);
-        if !deps_cp.is_empty() {
-            cp_parts.push(deps_cp);
-        }
+        if !deps_cp.is_empty() { cp_parts.push(deps_cp); }
+
+        let local_cp = config.get_local_classpath(project_dir);
+        if !local_cp.is_empty() { cp_parts.push(local_cp); }
 
         let separator = if cfg!(target_os = "windows") { ";" } else { ":" };
         let classpath = cp_parts.join(separator);
@@ -299,16 +311,17 @@ impl JavaModule {
             format!("🧪 Compilando {} archivos de test Java...", test_files.len()).cyan()
         );
 
-        // Classpath para compilar tests: libs de test + libs runtime + clases compiladas del proyecto
+        // Classpath para compilar tests: libs de test + libs runtime + clases compiladas del proyecto + módulos locales
         let mut cp_parts = vec![classes_dir.to_string_lossy().to_string()];
+        
         let deps_cp = build_classpath(&deps_dir);
-        if !deps_cp.is_empty() {
-            cp_parts.push(deps_cp);
-        }
+        if !deps_cp.is_empty() { cp_parts.push(deps_cp); }
+        
         let test_deps_cp = build_classpath(&test_deps_dir);
-        if !test_deps_cp.is_empty() {
-            cp_parts.push(test_deps_cp);
-        }
+        if !test_deps_cp.is_empty() { cp_parts.push(test_deps_cp); }
+
+        let local_cp = config.get_local_classpath(project_dir);
+        if !local_cp.is_empty() { cp_parts.push(local_cp); }
 
         // Obtener el jar del standalone console (descargarlo si es necesario)
         let junit_console_jar = Self::download_junit_standalone().await?;
@@ -360,7 +373,7 @@ impl JavaModule {
         println!();
 
         // 3. Ejecutar los tests
-        // Classpath de ejecución: test-classes + clases + deps + test-deps
+        // Classpath de ejecución: test-classes + clases + deps + test-deps + locales
         let mut exec_cp_parts = vec![
             test_classes_dir.to_string_lossy().to_string(),
             classes_dir.to_string_lossy().to_string(),
@@ -371,6 +384,9 @@ impl JavaModule {
         
         let exec_test_deps_cp = build_classpath(&test_deps_dir);
         if !exec_test_deps_cp.is_empty() { exec_cp_parts.push(exec_test_deps_cp); }
+
+        let exec_local_cp = config.get_local_classpath(project_dir);
+        if !exec_local_cp.is_empty() { exec_cp_parts.push(exec_local_cp); }
 
         let exec_classpath = exec_cp_parts.join(separator);
 

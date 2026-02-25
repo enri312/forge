@@ -1,0 +1,11 @@
+[project]
+name = "api"
+version = "0.1.0"
+lang = "java"
+
+[java]
+main-class = "api.Main"
+
+[dependencies]
+"local:core" = "path:../core"
+"local:database" = "path:../database"

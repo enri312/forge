@@ -269,6 +269,9 @@ forge/
 - [x] **v0.4.0** — Hooks de ciclo de vida, dependencias transitivas Maven, multi-módulo, `forge fmt` y `forge lint`
 - [x] **v0.5.0** — Caché remoto distribuido (S3/HTTP) con subida automática
 - [x] **v0.6.0** — Servidor oficial LSP (Language Server Protocol) para `forge.toml`
+- [x] **v0.7.0** — Dashboard Web Interactivo (Vite/React/Axum) con Server Embebido
+- [x] **v0.8.0** — Telemetría de Compilación en Vivo con Event Bus Global y Server-Sent Events (SSE)
+- [x] **v0.9.0** — Motor Multi-Módulo (DAG, Verificación de Ciclos, Local Paths y Cross-Inyección de Classpaths JVM)
 
 ### En desarrollo (Próximamente)
 - [ ] **v1.0.0** — **Fase 17:** Adopción Pública y Plugins (WebAssembly / Extism)

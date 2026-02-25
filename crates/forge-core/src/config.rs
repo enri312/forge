@@ -243,6 +243,36 @@ impl ForgeConfig {
         Ok(config)
     }
 
+    /// Obtiene el classpath compilado de los sub-módulos locales definidos con `path:`
+    pub fn get_local_classpath(&self, project_dir: &Path) -> String {
+        let mut cp = Vec::new();
+        let sep = if cfg!(target_os = "windows") { ";" } else { ":" };
+
+        let all_deps = self.dependencies.values().chain(self.test_dependencies.values());
+
+        for val in all_deps {
+            if val.starts_with("path:") {
+                let rel_path = val.trim_start_matches("path:");
+                let dep_dir = project_dir.join(rel_path);
+
+                if let Ok(dep_config) = ForgeConfig::load(&dep_dir) {
+                    let output_dir = dep_dir.join(&dep_config.project.output_dir);
+                    let classes_dir = output_dir.join("classes");
+                    let jar_path = output_dir.join(format!("{}.jar", dep_config.project.name));
+
+                    if jar_path.exists() {
+                        cp.push(jar_path.to_string_lossy().to_string());
+                    } else {
+                        // Incluso si aún no existe, inyectarlo (el paralelo se encargará si es requerido)
+                        cp.push(classes_dir.to_string_lossy().to_string());
+                    }
+                }
+            }
+        }
+
+        cp.join(sep)
+    }
+
     /// Valida que la configuración sea coherente.
     fn validate(&self) -> ForgeResult<()> {
         // Verificar que el lenguaje sea soportado

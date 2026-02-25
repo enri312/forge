@@ -213,7 +213,7 @@ async fn main() -> anyhow::Result<()> {
                 // Darle tiempo al servidor Axum para iniciar
                 tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
             }
-            let res = cmd_build(&project_dir, cli.verbose, release).await;
+            let res = cmd_build(project_dir.clone(), cli.verbose, release).await;
             if dashboard {
                 println!("\n{} {}", "🚀".cyan(), "Dashboard corriendo en segundo plano.".bold());
                 println!("{}", "Presiona Ctrl+C para finalizar, o visita http://localhost:3000".dimmed());
@@ -495,16 +495,31 @@ class MainTest {
     Ok(())
 }
 
-/// Comando: forge build
-async fn cmd_build(project_dir: &PathBuf, _verbose: bool, release: bool) -> anyhow::Result<()> {
-    let config = ForgeConfig::load(project_dir)?;
+/// Función auxiliar para romper el ciclo de recursión infinito en el compilador
+/// y asegurar el type-bound `Send + 'static` al usar concurrencia.
+fn cmd_build_boxed(
+    project_dir: PathBuf,
+    verbose: bool,
+    release: bool,
+) -> std::pin::Pin<Box<dyn std::future::Future<Output = anyhow::Result<()>> + Send + 'static>> {
+    Box::pin(async move { cmd_build(project_dir, verbose, release).await })
+}
 
-    // 📦 Multi-módulo: compilar sub-módulos primero
+/// Comando: forge build
+async fn cmd_build(project_dir: PathBuf, _verbose: bool, release: bool) -> anyhow::Result<()> {
+    let config = ForgeConfig::load(&project_dir)?;
+
+    // 📦 Multi-módulo: compilar sub-módulos con DAG inter-proyecto
     if !config.modules.is_empty() {
         println!(
             "{}",
             format!("📦 Workspace detectado: {} sub-módulos", config.modules.len()).cyan().bold()
         );
+
+        use cyrce_forge_core::dag::{Task, TaskAction};
+        let mut modules_map = std::collections::HashMap::new(); // name -> path
+        let mut dep_map = std::collections::HashMap::new(); // name -> deps
+
         for module_path in &config.modules {
             let module_dir = project_dir.join(module_path);
             if !module_dir.join("forge.toml").exists() {
@@ -514,23 +529,88 @@ async fn cmd_build(project_dir: &PathBuf, _verbose: bool, release: bool) -> anyh
                 );
                 continue;
             }
-            println!(
-                "   {}",
-                format!("🔨 Compilando módulo: {}", module_path).cyan()
-            );
-            let module_dir_buf = module_dir.to_path_buf();
-            Box::pin(cmd_build(&module_dir_buf, _verbose, release)).await?;
+            
+            let mod_config = ForgeConfig::load(&module_dir)?;
+            let mod_name = mod_config.project.name.clone();
+            modules_map.insert(mod_name.clone(), module_path.clone());
+            
+            let mut local_deps = Vec::new();
+            for val in mod_config.dependencies.values().chain(mod_config.test_dependencies.values()) {
+                if val.starts_with("path:") {
+                    let rel_path = val.trim_start_matches("path:");
+                    let dep_dir = module_dir.join(rel_path);
+                    if let Ok(dep_config) = ForgeConfig::load(&dep_dir) {
+                        local_deps.push(dep_config.project.name);
+                    }
+                }
+            }
+            dep_map.insert(mod_name, local_deps);
         }
+
+        let mut graph = cyrce_forge_core::dag::TaskGraph::new();
+        for (name, deps) in &dep_map {
+            graph.add_task(Task {
+                name: name.clone(),
+                description: format!("Build módulo {}", name),
+                depends_on: deps.clone(),
+                action: TaskAction::Composite,
+            })?;
+        }
+
+        graph.validate().context("Se detectó un ciclo de dependencias entre los proyectos del workspace")?;
+        
+        let levels = graph.parallel_levels()?;
+        for (i, level) in levels.iter().enumerate() {
+            if level.len() > 1 {
+                println!(
+                    "   {}",
+                    format!("⚡ Nivel {} — {} módulos en paralelo", i + 1, level.len()).yellow()
+                );
+            }
+            
+            let mut handles = Vec::new();
+            for mod_name in level {
+                let module_path = modules_map.get(mod_name).unwrap().clone();
+                let module_dir = project_dir.join(&module_path);
+                
+                println!(
+                    "   {}",
+                    format!("🔨 Compilando módulo: {}", module_path).cyan()
+                );
+                
+                let release_clone = release;
+                let verbose_clone = _verbose;
+                
+                handles.push(tokio::spawn(async move {
+                    let res = cmd_build_boxed(module_dir.clone(), verbose_clone, release_clone).await;
+                    (module_path, res)
+                }));
+            }
+            
+            for handle in handles {
+                let (m_path, res) = handle.await?;
+                if let Err(e) = res {
+                    return Err(anyhow::anyhow!("Error compilando módulo '{}': {}", m_path, e));
+                }
+            }
+        }
+
         println!(
             "   {}",
             "✅ Todos los sub-módulos compilados".green()
         );
+        
+        // Si el directorio actual sólo es un workspace root (sin src), no seguimos
+        let source_dir = project_dir.join(config.source_dir());
+        if !source_dir.exists() {
+            return Ok(());
+        }
     }
 
     // 1. Verificación Caché Local
     let source_dir = project_dir.join(config.source_dir());
     let extensions = cyrce_forge_langs::extensions_for_lang(&config.project.lang);
-    let mut cache = BuildCache::load(project_dir)?;
+    let mut cache = BuildCache::load(&project_dir)?;
 
     if !cache.has_changes(&source_dir, extensions)? {
         println!(
@@ -547,9 +627,9 @@ async fn cmd_build(project_dir: &PathBuf, _verbose: bool, release: bool) -> anyh
     if let Some(remote_cfg) = &config.cache {
         // Intenta descargar el output compilado remotamente para este master_hash
         cache.update_hashes(&source_dir, extensions)?;
-        if cache.download_from_remote(project_dir, output_dir_name, remote_cfg).await? {
+        if cache.download_from_remote(&project_dir, output_dir_name, remote_cfg).await? {
             used_remote = true;
-            cache.save(project_dir)?;
+            cache.save(&project_dir)?;
         }
     }
 
@@ -557,33 +637,33 @@ async fn cmd_build(project_dir: &PathBuf, _verbose: bool, release: bool) -> anyh
     if !used_remote {
 
     // 🪝 Hooks pre-build
-    hooks::run_pre_build(&config.hooks, project_dir).await?;
+    hooks::run_pre_build(&config.hooks, &project_dir).await?;
 
     // Resolver dependencias si hay
     if !config.dependencies.is_empty() {
-        resolve_dependencies(&config, project_dir).await?;
+        resolve_dependencies(&config, &project_dir).await?;
     }
 
         // Compilar según el lenguaje
         match config.project.lang.as_str() {
-            "java" => JavaModule::compile(&config, project_dir).await?,
-            "kotlin" => KotlinModule::compile(&config, project_dir).await?,
-            "python" => PythonModule::compile(&config, project_dir).await?,
+            "java" => JavaModule::compile(&config, &project_dir).await?,
+            "kotlin" => KotlinModule::compile(&config, &project_dir).await?,
+            "python" => PythonModule::compile(&config, &project_dir).await?,
             _ => {}
         }
 
         // Actualizar caché
         cache.update_hashes(&source_dir, extensions)?;
-        cache.save(project_dir)?;
+        cache.save(&project_dir)?;
 
         // Si la compilación fue local y tenemos push habilitado, subir artefactos
         if let Some(remote_cfg) = &config.cache {
-            cache.upload_to_remote(project_dir, output_dir_name, remote_cfg).await?;
+            cache.upload_to_remote(&project_dir, output_dir_name, remote_cfg).await?;
         }
     }
 
     // 🪝 Hooks post-build
-    hooks::run_post_build(&config.hooks, project_dir).await?;
+    hooks::run_post_build(&config.hooks, &project_dir).await?;
 
     Ok(())
 }
@@ -591,7 +671,7 @@ async fn cmd_build(project_dir: &PathBuf, _verbose: bool, release: bool) -> anyh
 /// Comando: forge run
 async fn cmd_run(project_dir: &PathBuf, verbose: bool) -> anyhow::Result<()> {
     // Primero compilar (en modo por defecto / no-release para run)
-    cmd_build(project_dir, verbose, false).await?;
+    cmd_build(project_dir.clone(), verbose, false).await?;
 
     let config = ForgeConfig::load(project_dir)?;
 
@@ -617,11 +697,11 @@ async fn cmd_test(project_dir: &PathBuf, verbose: bool) -> anyhow::Result<()> {
 
     match config.project.lang.as_str() {
         "java" => {
-            cmd_build(project_dir, verbose, false).await?;
+            cmd_build(project_dir.clone(), verbose, false).await?;
             JavaModule::test(&config, project_dir).await?;
         }
         "kotlin" => {
-            cmd_build(project_dir, verbose, false).await?;
+            cmd_build(project_dir.clone(), verbose, false).await?;
             KotlinModule::test(&config, project_dir).await?;
         }
         "python" => PythonModule::test(&config, project_dir).await?,
@@ -663,24 +743,28 @@ async fn cmd_deps(project_dir: &PathBuf) -> anyhow::Result<()> {
     resolve_dependencies(&config, project_dir).await
 }
 
-/// Resuelve dependencias según el lenguaje.
+/// Resuelve dependencias según el lenguaje, excluyendo las locales (path:).
 async fn resolve_dependencies(config: &ForgeConfig, project_dir: &PathBuf) -> anyhow::Result<()> {
     match config.project.lang.as_str() {
         "java" | "kotlin" => {
-            let mut resolver = MavenResolver::new(project_dir);
-            if !config.dependencies.is_empty() {
-                resolver.resolve_all(&config.dependencies).await?;
+            let mut resolver = cyrce_forge_deps::maven::MavenResolver::new(project_dir);
+            
+            let remote_deps: std::collections::HashMap<String, String> = config.dependencies.clone().into_iter().filter(|(_, v)| !v.starts_with("path:")).collect();
+            if !remote_deps.is_empty() {
+                resolver.resolve_all(&remote_deps).await?;
             }
-            if !config.test_dependencies.is_empty() {
-                resolver.resolve_test_deps(&config.test_dependencies).await?;
+            
+            let remote_test_deps: std::collections::HashMap<String, String> = config.test_dependencies.clone().into_iter().filter(|(_, v)| !v.starts_with("path:")).collect();
+            if !remote_test_deps.is_empty() {
+                resolver.resolve_test_deps(&remote_test_deps).await?;
             }
         }
         "python" => {
-            let resolver = PypiResolver::new();
-            if !config.dependencies.is_empty() {
-                resolver.verify_all(&config.dependencies).await?;
+            let resolver = cyrce_forge_deps::pypi::PypiResolver::new();
+            let remote_deps: std::collections::HashMap<String, String> = config.dependencies.clone().into_iter().filter(|(_, v)| !v.starts_with("path:")).collect();
+            if !remote_deps.is_empty() {
+                resolver.verify_all(&remote_deps).await?;
             }
-            // Python tests suelen ser via pytest/requirements-dev, por ahora ignoramos verify de test_deps pypi
         }
         _ => {}
     }
@@ -830,7 +914,7 @@ async fn cmd_watch(project_dir: &PathBuf, dashboard: bool) -> anyhow::Result<()>
 
     // Build inicial
     println!("{}", "\n── Build inicial ──".dimmed());
-    if let Err(e) = cmd_build(project_dir, false, false).await {
+    if let Err(e) = cmd_build(project_dir.clone(), false, false).await {
         eprintln!("   {} {}", "⚠️  Error en build:".yellow(), e);
     }
 
@@ -884,7 +968,7 @@ async fn cmd_watch(project_dir: &PathBuf, dashboard: bool) -> anyhow::Result<()>
                     );
 
                     let start = Instant::now();
-                    match cmd_build(project_dir, false, false).await {
+                    match cmd_build(project_dir.clone(), false, false).await {
                         Ok(_) => {
                             println!(
                                 "{}",
@@ -1232,7 +1316,7 @@ async fn cmd_bench(project_dir: &PathBuf, verbose: bool) -> anyhow::Result<()> {
         );
 
         let start = Instant::now();
-        cmd_build(project_dir, verbose, false).await?;
+        cmd_build(project_dir.clone(), verbose, false).await?;
         let elapsed = start.elapsed().as_secs_f64();
         times.push(elapsed);
 
@@ -1280,7 +1364,7 @@ async fn cmd_package(project_dir: &PathBuf) -> anyhow::Result<()> {
     );
 
     // Compilar primero
-    cmd_build(project_dir, false, false).await?;
+    cmd_build(project_dir.clone(), false, false).await?;
 
     // Crear directorio dist
     let dist_dir = project_dir.join("dist");

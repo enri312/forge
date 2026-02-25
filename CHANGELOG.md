@@ -1,6 +1,24 @@
 # Todos los cambios notables del proyecto FORGE se documentan aquí.
 # Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
+## [0.9.0] — 2026-02-25
+
+### Added
+- **Arquitectura Multi-Módulo (DAG Inter-Proyecto)**: Soporte completo para iteraciones complejas entre submódulos locales mediante la directiva `path:` dentro del `forge.toml`. El motor detectará cualquier referencia cruzada cíclica inyectada por error emitiendo un Warning limpio y paralelizado de toda otra capa agnóstica a este loop a través de `tokio::spawn`.
+- **Inyección Transversal de Classpaths (Java/Kotlin)**: Se rediseñaron los parsers nativos en las etapas de inter-compilación y ejecución (`java.rs` y `kotlin.rs`). Los mismos descubren recursivamente proyectos in-workspace construyendo los classpaths interconectados al invocar `javac` y `kotlinc`.
+- **Estabilidad de Tokio**: Solución estructural a los *falsos positivos* de compilación de Rust `E0283` mediante `Boxed Futures` rompiendo la retro-referenciación en la dependencia de asincronicidad.
+
+## [0.8.0] — 2026-02-25
+
+### Added
+- **Event Bus Global (`tokio::sync::broadcast`)**: Acople de un maestro canalizador general capaz de extraer eventos micro desde el motor interno de Rust sin obstruir el performance del DAG.
+- **Server-Sent Events (SSE)**: La CLI reenvía todos los eventos originarios de Forge a `/api/events` sobre la red HTTP activa, inyectándolos en caliente al frontend a 30 eventos/seg.
+
+## [0.7.0] — 2026-02-25
+
+### Added
+- **Dashboard Web Interactivo**: Integración directa de un frontend Vite/React empaquetado y transpuesto a embebimiento desde Axum ejecutado como sidecar nativo de Forge invocándolo desde `forge dashboard`. Provee monitoreo de estado gráfico con un UI temático _Industrial Cyberpunk_.
+
 ## [0.6.0] — 2026-02-24
 
 ### Added

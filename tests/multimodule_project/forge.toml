@@ -1,0 +1,10 @@
+modules = [
+    "core",
+    "database",
+    "api"
+]
+
+[project]
+name = "multimodule-test"
+version = "0.1.0"
+lang = "java"

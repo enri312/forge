@@ -68,8 +68,18 @@ impl KotlinModule {
             format!("🟣 Compilando {} archivos Kotlin...", kt_files.len()).cyan()
         );
 
-        // Construir classpath con dependencias
-        let classpath = build_kotlin_classpath(&deps_dir);
+        // Construir classpath con dependencias y locales
+        let mut classpath = build_kotlin_classpath(&deps_dir);
+        let local_cp = config.get_local_classpath(project_dir);
+        if !local_cp.is_empty() {
+            let sep = if cfg!(target_os = "windows") { ";" } else { ":" };
+            if classpath.is_empty() {
+                classpath = local_cp;
+            } else {
+                classpath.push_str(sep);
+                classpath.push_str(&local_cp);
+            }
+        }
 
         let jvm_target = kotlin_config
             .map(|k| k.jvm_target.as_str())
@@ -224,9 +234,10 @@ impl KotlinModule {
         }
 
         let deps_cp = build_kotlin_classpath(&deps_dir);
-        if !deps_cp.is_empty() {
-            cp_parts.push(deps_cp);
-        }
+        if !deps_cp.is_empty() { cp_parts.push(deps_cp); }
+
+        let local_cp = config.get_local_classpath(project_dir);
+        if !local_cp.is_empty() { cp_parts.push(local_cp); }
 
         let separator = if cfg!(target_os = "windows") { ";" } else { ":" };
         let classpath = cp_parts.join(separator);
@@ -318,14 +329,15 @@ impl KotlinModule {
         );
 
         let mut cp_parts = vec![classes_dir.to_string_lossy().to_string()];
+        
         let deps_cp = build_kotlin_classpath(&deps_dir);
-        if !deps_cp.is_empty() {
-            cp_parts.push(deps_cp);
-        }
+        if !deps_cp.is_empty() { cp_parts.push(deps_cp); }
+        
         let test_deps_cp = build_kotlin_classpath(&test_deps_dir);
-        if !test_deps_cp.is_empty() {
-            cp_parts.push(test_deps_cp);
-        }
+        if !test_deps_cp.is_empty() { cp_parts.push(test_deps_cp); }
+
+        let local_cp = config.get_local_classpath(project_dir);
+        if !local_cp.is_empty() { cp_parts.push(local_cp); }
 
         let junit_console_jar = Self::download_junit_standalone().await?;
         cp_parts.push(junit_console_jar.to_string_lossy().to_string());
@@ -399,6 +411,9 @@ impl KotlinModule {
 
         let exec_test_deps_cp = build_kotlin_classpath(&test_deps_dir);
         if !exec_test_deps_cp.is_empty() { exec_cp_parts.push(exec_test_deps_cp); }
+
+        let exec_local_cp = config.get_local_classpath(project_dir);
+        if !exec_local_cp.is_empty() { exec_cp_parts.push(exec_local_cp); }
 
         let exec_classpath = exec_cp_parts.join(separator);
 

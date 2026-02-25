@@ -8,7 +8,7 @@ description = "Language Server Protocol (LSP) oficial para FORGE"
 
 [dependencies]
 # Dependencias internas de Forge
-cyrce-forge-core = { version = "0.6.0", path = "../forge-core" }
+cyrce-forge-core = { version = "0.9.0", path = "../forge-core" }
 
 # LSP Framework
 tower-lsp.workspace = true

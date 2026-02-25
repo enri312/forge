@@ -280,3 +280,35 @@ cargo run -- run --project-dir tests/java_project
 2. **Inicializar un proyecto**: `forge init` en un directorio vacío y verificar que se crea `forge.toml`
 3. **Compilar proyecto Java de prueba**: `forge build` y verificar que se genera el `.class`/`.jar`
 4. **Ejecutar proyecto**: `forge run` y verificar la salida esperada
+
+---
+
+## [NUEVO] Fase 23: Arquitectura Multi-Módulo JVM (v0.9.0)
+
+Para soportar los "casos salvajes" corporativos, Forge evolucionará de un iterador de submódulos simple a un **Grafo Acíclico Dirigido (DAG) inter-proyectos**.
+
+### Especificación de Diseño (forge.toml)
+Los sub-proyectos y referencias locales se definirán mediante el campo `dependencies` utilizando el prefijo mágico `path:`
+
+```toml
+# api/forge.toml
+[dependencies]
+"local:core" = "path:../core"
+"local:database" = "path:../database"
+```
+
+### Motor de Composición (DAG Multi-Módulo)
+Actualmente, `cmd_build` compila la matriz secuencialmente (`for module in modules { build() }`). 
+La nueva arquitectura creará un **ProjectGraph** (instancia del `TaskGraph` existente) en `main.rs` donde:
+1. Cada submódulo será una `TaskAction::Internal(CompileProject)`.
+2. Las tareas dependerán del nombre de sus submódulos hermanos.
+3. El motor `Executor` nativo detectará dependencias circulares (ej: `core -> api -> core`) deteniendo la construcción, o paralelizará sub-módulos ajenos automáticamente.
+
+### JVM Classpath Injection
+Cuando el motor invoque `JavaModule::compile` en `api`:
+- Detectará las dependencias marcadas con `path:` 
+- Las resolverá como directorios absolutos.
+- Añadirá automáticamente sus outputs (`../core/build/classes` o `.jar` relativos) al flag `-cp` del `javac`.
+
+### Plan de Pruebas
+Se creará la carpeta `tests/multimodule_project` con 3 capas (`core`, `database`, `api`). Forzaremos deliberadamente un ciclo `(api -> core -> api)` para atestiguar la protección del Motor, y luego un ciclo exitoso para visualizar el Pipeline en el Dashboard.
