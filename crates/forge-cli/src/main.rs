@@ -79,6 +79,10 @@ enum Commands {
         /// Compilar en modo optimizado para producción
         #[arg(long)]
         release: bool,
+        
+        /// Lanzar el dashboard web interactivo durante la compilación
+        #[arg(short, long)]
+        dashboard: bool,
     },
 
     /// 🚀 Compilar y ejecutar el proyecto
@@ -112,7 +116,11 @@ enum Commands {
     Info,
 
     /// 👁️ Vigilar cambios y recompilar automáticamente
-    Watch,
+    Watch {
+        /// Lanzar el dashboard web interactivo
+        #[arg(short, long)]
+        dashboard: bool,
+    },
 
     /// ⚙️ Ejecutar una tarea personalizada del forge.toml
     Task {
@@ -196,7 +204,24 @@ async fn main() -> anyhow::Result<()> {
     let result = match cli.command {
         Commands::Init { lang } => cmd_init(&project_dir, &lang).await,
         Commands::New { name, lang } => cmd_new(&project_dir, &name, &lang).await,
-        Commands::Build { release } => cmd_build(&project_dir, cli.verbose, release).await,
+        Commands::Build { release, dashboard } => {
+            if dashboard {
+                let p = project_dir.clone();
+                tokio::spawn(async move {
+                    let _ = dashboard::cmd_dashboard(&p, 3000).await;
+                });
+                // Darle tiempo al servidor Axum para iniciar
+                tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+            }
+            let res = cmd_build(&project_dir, cli.verbose, release).await;
+            if dashboard {
+                println!("\n{} {}", "🚀".cyan(), "Dashboard corriendo en segundo plano.".bold());
+                println!("{}", "Presiona Ctrl+C para finalizar, o visita http://localhost:3000".dimmed());
+                // Mantener el proceso vivo para que el dashboard siga funcionando
+                let _ = tokio::signal::ctrl_c().await; 
+            }
+            res
+        },
         Commands::Run => cmd_run(&project_dir, cli.verbose).await,
         Commands::Test => cmd_test(&project_dir, cli.verbose).await,
         Commands::Clean => cmd_clean(&project_dir).await,
@@ -205,7 +230,7 @@ async fn main() -> anyhow::Result<()> {
         Commands::Upgrade => upgrade::cmd_upgrade(&project_dir).await,
         Commands::Tree => tree::cmd_tree(&project_dir).await,
         Commands::Info => cmd_info(&project_dir).await,
-        Commands::Watch => cmd_watch(&project_dir).await,
+        Commands::Watch { dashboard } => cmd_watch(&project_dir, dashboard).await,
         Commands::Task { name } => cmd_task(&project_dir, &name).await,
         Commands::Doctor => cmd_doctor().await,
         Commands::Stats => cmd_stats(&project_dir).await,
@@ -771,7 +796,7 @@ async fn cmd_new(parent_dir: &PathBuf, name: &str, lang: &str) -> anyhow::Result
 }
 
 /// Comando: forge watch
-async fn cmd_watch(project_dir: &PathBuf) -> anyhow::Result<()> {
+async fn cmd_watch(project_dir: &PathBuf, dashboard: bool) -> anyhow::Result<()> {
     use notify::{Config, RecommendedWatcher, RecursiveMode, Watcher, Event, EventKind};
     use std::sync::mpsc;
 
@@ -783,6 +808,14 @@ async fn cmd_watch(project_dir: &PathBuf) -> anyhow::Result<()> {
             "Directorio de código fuente no encontrado: {}",
             source_dir.display()
         ));
+    }
+
+    if dashboard {
+        let p = project_dir.clone();
+        tokio::spawn(async move {
+            let _ = dashboard::cmd_dashboard(&p, 3000).await;
+        });
+        tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
     }
 
     println!(

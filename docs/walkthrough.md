@@ -39,10 +39,17 @@ Se creó **FORGE**, un build system de nueva generación escrito en Rust, diseñ
 | [maven.rs](file:///E:/CYRCE/crates/forge-deps/src/maven.rs) | Descarga JARs de Maven Central |
 | [pypi.rs](file:///E:/CYRCE/crates/forge-deps/src/pypi.rs) | Verifica paquetes en PyPI |
 
-### `forge-cli` — CLI (1 archivo)
+### `forge-cli` — CLI (2 archivos)
 | Archivo | Propósito |
 |---|---|
-| [main.rs](file:///E:/CYRCE/crates/forge-cli/src/main.rs) | 7 comandos: init, build, run, test, clean, deps, info |
+| [main.rs](file:///E:/CYRCE/crates/forge-cli/src/main.rs) | 7 comandos: init, build, run, test, clean, deps, info, dashboard |
+| [dashboard.rs](file:///E:/CYRCE/crates/forge-cli/src/dashboard.rs) | Servidor Axum embebido con rutas estáticas y endpoint `/api/events` SSE |
+
+### `forge-dashboard` — Web UI en React (25 archivos)
+Aplicación React + Vite para monitoreo visual en tiempo real renderizando la topología DAG, logs asíncronos y telemetría de Caché usando `tokio::sync::broadcast`. Incluido dinámicamente usando el flag `--dashboard`.
+
+![Dashboard Telemetría en Vivo](file:///C:/Users/enri3/.gemini/antigravity/brain/b63e9f43-c02a-43fc-bf2d-434e3a199071/forge_dashboard_final_observation_1772050960116.png)
+
 
 ### Proyectos de Ejemplo (6 archivos)
 - `tests/java_project/` — Proyecto Java simple con `Main.java`
