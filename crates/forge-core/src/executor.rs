@@ -236,6 +236,10 @@ async fn execute_single_task(
 ) -> ForgeResult<TaskResult> {
     let start = Instant::now();
 
+    crate::telemetry::global_event_bus().send(crate::telemetry::ForgeEvent::TaskStarted {
+        name: task.name.clone(),
+    });
+
     pb.set_message(format!("Ejecutando: {}", task.name));
 
     let (success, stdout, stderr) = match &task.action {
@@ -253,10 +257,20 @@ async fn execute_single_task(
         }
     };
 
+    let duration = start.elapsed();
+
+    // Notificar terminación al bus de eventos
+    crate::telemetry::global_event_bus().send(crate::telemetry::ForgeEvent::TaskFinished {
+        name: task.name.clone(),
+        time_ms: duration.as_millis() as u64,
+        cached: false,
+        cache_source: None,
+    });
+
     Ok(TaskResult {
         name: task.name.clone(),
         success,
-        duration: start.elapsed(),
+        duration,
         stdout,
         stderr,
         cached: false,

@@ -1,0 +1,102 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-forge-bg: #050505;
+  --color-forge-panel: #0f0f0f;
+  --color-forge-border: #2a2a2a;
+  --color-forge-lava: #FF3300;
+  --color-forge-lava-glow: rgba(255, 51, 0, 0.6);
+  --color-forge-yellow: #FFCC00;
+  --color-forge-neon: #00FFFF;
+  --color-forge-neon-glow: rgba(0, 255, 255, 0.6);
+  --color-forge-green: #39FF14;
+  --color-forge-magenta: #FF00FF;
+  
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+body {
+  background-color: var(--color-forge-bg);
+  color: #e5e5e5;
+  font-family: var(--font-sans);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-forge-bg);
+  border-left: 1px solid var(--color-forge-border);
+}
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 0px; /* Industrial sharp edges */
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-forge-lava);
+}
+
+/* Industrial Caution Stripes */
+.caution-stripes {
+  background: repeating-linear-gradient(
+    -45deg,
+    #000000,
+    #000000 10px,
+    var(--color-forge-yellow) 10px,
+    var(--color-forge-yellow) 20px
+  );
+}
+
+.caution-stripes-lava {
+  background: repeating-linear-gradient(
+    -45deg,
+    #000000,
+    #000000 10px,
+    var(--color-forge-lava) 10px,
+    var(--color-forge-lava) 20px
+  );
+}
+
+/* Animations */
+@keyframes pulse-glow-lava {
+  0%, 100% { box-shadow: 0 0 10px var(--color-forge-lava-glow), inset 0 0 5px var(--color-forge-lava-glow); }
+  50% { box-shadow: 0 0 25px var(--color-forge-lava-glow), inset 0 0 10px var(--color-forge-lava-glow); }
+}
+.animate-pulse-glow-lava {
+  animation: pulse-glow-lava 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-glow-neon {
+  0%, 100% { box-shadow: 0 0 10px var(--color-forge-neon-glow); }
+  50% { box-shadow: 0 0 25px var(--color-forge-neon-glow); }
+}
+.animate-pulse-glow-neon {
+  animation: pulse-glow-neon 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes fill-bar {
+  from { width: 0; }
+}
+.animate-fill-bar {
+  animation: fill-bar 1s ease-out forwards;
+}
+
+@keyframes terminal-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.animate-blink {
+  animation: terminal-blink 1s step-end infinite;
+}
+
+/* Cyberpunk Cut Corners */
+.cyber-cut {
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+}
+.cyber-cut-reverse {
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+}

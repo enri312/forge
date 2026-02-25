@@ -12,6 +12,7 @@ mod lint;
 mod add;
 mod upgrade;
 mod tree;
+mod dashboard;
 
 use std::path::PathBuf;
 use std::time::Instant;
@@ -149,6 +150,13 @@ enum Commands {
 
     /// 🔍 Análisis estático del código (checkstyle, detekt, ruff)
     Lint,
+
+    /// 🌐 Iniciar el Dashboard Web Interactivo
+    Dashboard {
+        /// Puerto para iniciar el servidor (por defecto: 3000)
+        #[arg(long, default_value = "3000")]
+        port: u16,
+    },
 }
 
 #[tokio::main]
@@ -206,6 +214,7 @@ async fn main() -> anyhow::Result<()> {
         Commands::Ide { target } => ide::cmd_ide(&project_dir, &target).await,
         Commands::Fmt => fmt::cmd_fmt(&project_dir).await,
         Commands::Lint => lint::cmd_lint(&project_dir).await,
+        Commands::Dashboard { port } => dashboard::cmd_dashboard(&project_dir, port).await,
         Commands::Completions { shell } => {
             let mut cmd = Cli::command();
             clap_complete::generate(shell, &mut cmd, "forge", &mut std::io::stdout());

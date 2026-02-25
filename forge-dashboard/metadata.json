@@ -1,0 +1,5 @@
+{
+  "name": "forge-dashboard",
+  "description": "Industrial Cyberpunk dashboard for a high-performance Rust-based build system.",
+  "requestFramePermissions": []
+}
