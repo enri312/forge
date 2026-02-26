@@ -94,6 +94,17 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
+      - name: Setup Node.js (Dashboard HTML)
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: ⚡ Compilar Dashboard Frontend
+        working-directory: forge-dashboard
+        run: |
+          npm install
+          npm run build
+
       - name: 📦 Build Release
         run: cargo build --release --target ${{ matrix.target }}
 
