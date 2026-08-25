@@ -34,7 +34,8 @@ impl JavaModule {
         if !source_dir.exists() {
             return Err(ForgeError::IoError {
                 path: source_dir,
-                message: "Directorio fuente no existe. ¿Olvidaste crear tus archivos .java?".to_string(),
+                message: "Directorio fuente no existe. ¿Olvidaste crear tus archivos .java?"
+                    .to_string(),
             }
             .into());
         }
@@ -72,7 +73,11 @@ impl JavaModule {
         let mut classpath = build_classpath(&deps_dir);
         let local_cp = config.get_local_classpath(project_dir);
         if !local_cp.is_empty() {
-            let sep = if cfg!(target_os = "windows") { ";" } else { ":" };
+            let sep = if cfg!(target_os = "windows") {
+                ";"
+            } else {
+                ":"
+            };
             if classpath.is_empty() {
                 classpath = local_cp;
             } else {
@@ -81,22 +86,29 @@ impl JavaModule {
             }
         }
 
-        // Construir comando javac
-        let target = java_config
-            .map(|j| j.target.as_str())
+        // Prioridad: [project].java-version → [java].target → default "17"
+        let target = config
+            .project
+            .java_version
+            .as_deref()
+            .or_else(|| java_config.map(|j| j.target.as_str()))
             .unwrap_or("17");
 
         let mut cmd = tokio::process::Command::new("javac");
 
         // Opciones de compilación
-        cmd.arg("-d")
-            .arg(&output_dir)
-            .arg("--release")
-            .arg(target);
+        cmd.arg("-d").arg(&output_dir).arg("--release").arg(target);
 
-        // Agregar classpath si hay dependencias
+        // Soporte JPMS (Java 9+ Modules)
+        let has_module_info = source_dir.join("module-info.java").exists();
+
+        // Agregar classpath o module-path si hay dependencias
         if !classpath.is_empty() {
             cmd.arg("-cp").arg(&classpath);
+            // Si tiene módulo, inyectamos también los mismos JARs al module path para resolución de 'requires'
+            if has_module_info {
+                cmd.arg("--module-path").arg(&classpath);
+            }
         }
 
         // Agregar archivos fuente
@@ -180,9 +192,12 @@ impl JavaModule {
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
 
-        let output = cmd.output().await.map_err(|e| ForgeError::CommandNotFound {
-            command: format!("jar: {}", e),
-        })?;
+        let output = cmd
+            .output()
+            .await
+            .map_err(|e| ForgeError::CommandNotFound {
+                command: format!("jar: {}", e),
+            })?;
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
@@ -215,20 +230,25 @@ impl JavaModule {
 
         // Construir classpath: clases compiladas + dependencias + módulos locales
         let mut cp_parts: Vec<String> = vec![classes_dir.to_string_lossy().to_string()];
-        
+
         let deps_cp = build_classpath(&deps_dir);
-        if !deps_cp.is_empty() { cp_parts.push(deps_cp); }
+        if !deps_cp.is_empty() {
+            cp_parts.push(deps_cp);
+        }
 
         let local_cp = config.get_local_classpath(project_dir);
-        if !local_cp.is_empty() { cp_parts.push(local_cp); }
+        if !local_cp.is_empty() {
+            cp_parts.push(local_cp);
+        }
 
-        let separator = if cfg!(target_os = "windows") { ";" } else { ":" };
+        let separator = if cfg!(target_os = "windows") {
+            ";"
+        } else {
+            ":"
+        };
         let classpath = cp_parts.join(separator);
 
-        println!(
-            "   {}",
-            format!("🚀 Ejecutando {}...", main_class).cyan()
-        );
+        println!("   {}", format!("🚀 Ejecutando {}...", main_class).cyan());
         println!();
 
         let mut cmd = tokio::process::Command::new("java");
@@ -239,9 +259,12 @@ impl JavaModule {
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit());
 
-        let status = cmd.status().await.map_err(|e| ForgeError::CommandNotFound {
-            command: format!("java: {}", e),
-        })?;
+        let status = cmd
+            .status()
+            .await
+            .map_err(|e| ForgeError::CommandNotFound {
+                command: format!("java: {}", e),
+            })?;
 
         if !status.success() {
             return Err(ForgeError::TaskFailed {
@@ -308,31 +331,43 @@ impl JavaModule {
 
         println!(
             "   {}",
-            format!("🧪 Compilando {} archivos de test Java...", test_files.len()).cyan()
+            format!(
+                "🧪 Compilando {} archivos de test Java...",
+                test_files.len()
+            )
+            .cyan()
         );
 
         // Classpath para compilar tests: libs de test + libs runtime + clases compiladas del proyecto + módulos locales
         let mut cp_parts = vec![classes_dir.to_string_lossy().to_string()];
-        
+
         let deps_cp = build_classpath(&deps_dir);
-        if !deps_cp.is_empty() { cp_parts.push(deps_cp); }
-        
+        if !deps_cp.is_empty() {
+            cp_parts.push(deps_cp);
+        }
+
         let test_deps_cp = build_classpath(&test_deps_dir);
-        if !test_deps_cp.is_empty() { cp_parts.push(test_deps_cp); }
+        if !test_deps_cp.is_empty() {
+            cp_parts.push(test_deps_cp);
+        }
 
         let local_cp = config.get_local_classpath(project_dir);
-        if !local_cp.is_empty() { cp_parts.push(local_cp); }
+        if !local_cp.is_empty() {
+            cp_parts.push(local_cp);
+        }
 
         // Obtener el jar del standalone console (descargarlo si es necesario)
         let junit_console_jar = Self::download_junit_standalone().await?;
         cp_parts.push(junit_console_jar.to_string_lossy().to_string());
 
-        let separator = if cfg!(target_os = "windows") { ";" } else { ":" };
+        let separator = if cfg!(target_os = "windows") {
+            ";"
+        } else {
+            ":"
+        };
         let compile_classpath = cp_parts.join(separator);
 
-        let target = java_config
-            .map(|j| j.target.as_str())
-            .unwrap_or("17");
+        let target = java_config.map(|j| j.target.as_str()).unwrap_or("17");
 
         let mut javac_cmd = tokio::process::Command::new("javac");
         javac_cmd
@@ -378,15 +413,21 @@ impl JavaModule {
             test_classes_dir.to_string_lossy().to_string(),
             classes_dir.to_string_lossy().to_string(),
         ];
-        
+
         let exec_deps_cp = build_classpath(&deps_dir);
-        if !exec_deps_cp.is_empty() { exec_cp_parts.push(exec_deps_cp); }
-        
+        if !exec_deps_cp.is_empty() {
+            exec_cp_parts.push(exec_deps_cp);
+        }
+
         let exec_test_deps_cp = build_classpath(&test_deps_dir);
-        if !exec_test_deps_cp.is_empty() { exec_cp_parts.push(exec_test_deps_cp); }
+        if !exec_test_deps_cp.is_empty() {
+            exec_cp_parts.push(exec_test_deps_cp);
+        }
 
         let exec_local_cp = config.get_local_classpath(project_dir);
-        if !exec_local_cp.is_empty() { exec_cp_parts.push(exec_local_cp); }
+        if !exec_local_cp.is_empty() {
+            exec_cp_parts.push(exec_local_cp);
+        }
 
         let exec_classpath = exec_cp_parts.join(separator);
 
@@ -423,55 +464,11 @@ impl JavaModule {
 
     /// Descarga la consola standalone de JUnit si no existe
     async fn download_junit_standalone() -> ForgeResult<PathBuf> {
-        let tools_dir = dirs::home_dir()
-            .unwrap_or_else(|| PathBuf::from("."))
-            .join(".forge")
-            .join("tools");
-
-        std::fs::create_dir_all(&tools_dir).map_err(|e| ForgeError::IoError {
-            path: tools_dir.clone(),
-            message: e.to_string(),
-        })?;
-
-        let jar_name = "junit-platform-console-standalone-6.0.3.jar";
-        let jar_path = tools_dir.join(jar_name);
-
-        if jar_path.exists() {
-            return Ok(jar_path);
-        }
-
         println!(
             "   {}",
             "⬇️  Descargando JUnit Platform Console Standalone...".dimmed()
         );
-
-        let url = "https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.12.0/junit-platform-console-standalone-1.12.0.jar"; 
-        // Nota: Para no romper el programa por una versión inexistente en Maven, bajaremos la latest *real* estable (1.12.0 Platform = JUnit Jupiter 5.12/6.0-M) pero lo guardaremos como 6.0.3.
-        
-        let client = reqwest::Client::new();
-        let response = client.get(url).send().await.map_err(|e: reqwest::Error| ForgeError::DownloadError {
-            url: url.to_string(),
-            message: e.to_string()
-        })?;
-
-        if !response.status().is_success() {
-            return Err(ForgeError::DownloadError {
-                url: url.to_string(),
-                message: format!("HTTP {}", response.status()),
-            }.into());
-        }
-
-        let bytes = response.bytes().await.map_err(|e: reqwest::Error| ForgeError::DownloadError {
-            url: url.to_string(),
-            message: e.to_string()
-        })?;
-
-        std::fs::write(&jar_path, &bytes).map_err(|e| ForgeError::IoError {
-            path: jar_path.clone(),
-            message: e.to_string(),
-        })?;
-
-        Ok(jar_path)
+        crate::junit::download_junit_standalone().await
     }
 }
 
@@ -481,7 +478,11 @@ fn build_classpath(deps_dir: &Path) -> String {
         return String::new();
     }
 
-    let separator = if cfg!(target_os = "windows") { ";" } else { ":" };
+    let separator = if cfg!(target_os = "windows") {
+        ";"
+    } else {
+        ":"
+    };
 
     WalkDir::new(deps_dir)
         .into_iter()

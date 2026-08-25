@@ -43,7 +43,10 @@ async fn fmt_java(project_dir: &Path, config: &ForgeConfig) -> Result<()> {
 
     match status {
         Ok(s) if s.success() => {
-            println!("   {}", "✅ Código Java formateado (google-java-format)".green());
+            println!(
+                "   {}",
+                "✅ Código Java formateado (google-java-format)".green()
+            );
         }
         _ => {
             println!(
@@ -76,10 +79,7 @@ async fn fmt_kotlin(project_dir: &Path, _config: &ForgeConfig) -> Result<()> {
                 "   {}",
                 "💡 Tip: Instala 'ktlint' para formateo automático de Kotlin.".yellow()
             );
-            println!(
-                "   {}",
-                "   https://pinterest.github.io/ktlint/".dimmed()
-            );
+            println!("   {}", "   https://pinterest.github.io/ktlint/".dimmed());
         }
     }
     Ok(())
@@ -112,12 +112,10 @@ async fn fmt_python(project_dir: &Path, _config: &ForgeConfig) -> Result<()> {
                 _ => {
                     println!(
                         "   {}",
-                        "💡 Tip: Instala 'black' o 'autopep8' para formateo automático de Python.".yellow()
+                        "💡 Tip: Instala 'black' o 'autopep8' para formateo automático de Python."
+                            .yellow()
                     );
-                    println!(
-                        "   {}",
-                        "   pip install black".dimmed()
-                    );
+                    println!("   {}", "   pip install black".dimmed());
                 }
             }
         }

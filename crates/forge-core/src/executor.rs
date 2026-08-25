@@ -78,9 +78,12 @@ impl Executor {
 
         println!(
             "\n{}",
-            format!("🔥 FORGE v{} — Iniciando build...", env!("CARGO_PKG_VERSION"))
-                .bold()
-                .cyan()
+            format!(
+                "🔥 FORGE v{} — Iniciando build...",
+                env!("CARGO_PKG_VERSION")
+            )
+            .bold()
+            .cyan()
         );
         println!(
             "{}",
@@ -100,8 +103,12 @@ impl Executor {
             if level.len() > 1 {
                 println!(
                     "{}",
-                    format!("   ⚡ Nivel {} — {} tareas en paralelo", level_idx + 1, level.len())
-                        .yellow()
+                    format!(
+                        "   ⚡ Nivel {} — {} tareas en paralelo",
+                        level_idx + 1,
+                        level.len()
+                    )
+                    .yellow()
                 );
             }
 
@@ -150,12 +157,7 @@ impl Executor {
                         let duration_str =
                             format!("({:.1}ms)", result.duration.as_secs_f64() * 1000.0).dimmed();
 
-                        println!(
-                            "   {} {} {}",
-                            status,
-                            result.name.bold(),
-                            duration_str
-                        );
+                        println!("   {} {} {}", status, result.name.bold(), duration_str);
 
                         if !result.success && !result.stderr.is_empty() {
                             println!("\n{}", "   ── Error ──".red().bold());
@@ -201,12 +203,9 @@ impl Executor {
         } else {
             println!(
                 "{}",
-                format!(
-                    "💀 BUILD FALLIDO en {:.2}s",
-                    total_duration.as_secs_f64()
-                )
-                .red()
-                .bold()
+                format!("💀 BUILD FALLIDO en {:.2}s", total_duration.as_secs_f64())
+                    .red()
+                    .bold()
             );
         }
         println!();
@@ -243,9 +242,7 @@ async fn execute_single_task(
     pb.set_message(format!("Ejecutando: {}", task.name));
 
     let (success, stdout, stderr) = match &task.action {
-        TaskAction::Command(cmd) => {
-            run_external_command(cmd, project_dir, verbose).await?
-        }
+        TaskAction::Command(cmd) => run_external_command(cmd, project_dir, verbose).await?,
         TaskAction::Internal(_internal) => {
             // Las tareas internas serán manejadas por los módulos de lenguaje
             // Por ahora, simplemente se marcan como exitosas
@@ -263,6 +260,7 @@ async fn execute_single_task(
     crate::telemetry::global_event_bus().send(crate::telemetry::ForgeEvent::TaskFinished {
         name: task.name.clone(),
         time_ms: duration.as_millis() as u64,
+        success,
         cached: false,
         cache_source: None,
     });

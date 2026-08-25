@@ -42,6 +42,7 @@
 | 🤯 Difícil de depurar | 💬 Mensajes de error claros |
 | 📈 Curva de aprendizaje alta | 🎯 Convención sobre configuración |
 | ☕ Solo JVM nativo | 🌐 Java + Kotlin + Python desde el inicio |
+| 📦 Cachés de red redundantes y lentas | 💎 CAS Global y Zero-Copy (Enlaces Duros $0$ Bytes) |
 
 ---
 
@@ -224,7 +225,7 @@ forge/
 - **⚡ Ejecución Paralela**: Las tareas sin dependencias se ejecutan simultáneamente usando un grafo DAG
 - **💾 Caché Incremental**: Solo recompila archivos que han cambiado (hashing SHA-256)
 - **📦 Dependencias Automáticas**: Descarga JARs de Maven Central y paquetes de PyPI con **resolución transitiva** de POMs
-- **🧪 Test Runners Nativos**: Integra PyTest y auto-descarga global de JUnit 6 Console Standalone para testear nativamente.
+- **🧪 Test Runners Nativos**: Integra pytest y auto-descarga global de JUnit Platform Console Standalone para ejecutar pruebas nativamente.
 - **🛠️ Compatibilidad IDE**: Generación automática de setups con `forge ide` y bundle interactivo para VS Code.
 - **🪝 Hooks de Ciclo de Vida**: `pre-build`, `post-build`, `pre-test`, `post-test` configurables en `forge.toml`
 - **📦 Multi-Módulo**: Soporte de workspaces con sub-proyectos independientes (`modules = [...]`)
@@ -264,10 +265,10 @@ forge/
 - [x] **v0.1.1** — `forge doctor`, `forge stats`, `forge bench`
 - [x] **v0.1.1** — `forge new`, `forge task`, `forge package`
 - [x] **v0.1.1** — GitHub Actions CI (Linux, Windows, macOS)
-- [x] **v0.2.0** — Test runners nativos (Aislacion de descargas de tests unitarios, auto-descarga global de JUnit 6 Console, setup nativo virtualenv pytest/unittest e integracion CLI)
+- [x] **v0.2.0** — Test runners nativos (aislamiento de dependencias de prueba, JUnit Platform Console, virtualenv con pytest e integración CLI)
 - [x] **v0.3.0** — Generador de setups `forge ide` y Extensión básica de VS Code
 - [x] **v0.4.0** — Hooks de ciclo de vida, dependencias transitivas Maven, multi-módulo, `forge fmt` y `forge lint`
-- [x] **v0.5.0** — Caché remoto distribuido (S3/HTTP) con subida automática
+- [x] **v0.5.0** — Caché remoto distribuido por HTTP(S) con subida automática
 - [x] **v0.6.0** — Servidor oficial LSP (Language Server Protocol) para `forge.toml`
 - [x] **v0.7.0** — Dashboard Web Interactivo (Vite/React/Axum) con Server Embebido
 - [x] **v0.8.0** — Telemetría de Compilación en Vivo con Event Bus Global y Server-Sent Events (SSE)

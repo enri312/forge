@@ -14,6 +14,7 @@ pub enum ForgeEvent {
     TaskFinished {
         name: String,
         time_ms: u64,
+        success: bool,
         cached: bool,
         cache_source: Option<String>,
     },
@@ -42,6 +43,12 @@ impl EventBus {
     pub fn send(&self, event: ForgeEvent) {
         // Ignoramos el error si no hay suscriptores vivos escuchando
         let _ = self.sender.send(event);
+    }
+}
+
+impl Default for EventBus {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

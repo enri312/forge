@@ -3,12 +3,14 @@
   "title": "FORGE Build Configuration",
   "description": "Esquema de configuración para forge.toml — Build system FORGE",
   "type": "object",
+  "additionalProperties": false,
   "required": [
     "project"
   ],
   "properties": {
     "project": {
       "type": "object",
+      "additionalProperties": false,
       "description": "Metadatos del proyecto",
       "required": [
         "name",
@@ -38,6 +40,10 @@
           "type": "string",
           "description": "Descripción breve del proyecto"
         },
+        "java-version": {
+          "type": "string",
+          "description": "Versión objetivo de Java/JDK con prioridad sobre java.target"
+        },
         "output_dir": {
           "type": "string",
           "description": "Directorio de salida de compilación",
@@ -47,6 +53,7 @@
     },
     "java": {
       "type": "object",
+      "additionalProperties": false,
       "description": "Configuración para proyectos Java",
       "properties": {
         "source": {
@@ -82,12 +89,18 @@
     },
     "kotlin": {
       "type": "object",
+      "additionalProperties": false,
       "description": "Configuración para proyectos Kotlin",
       "properties": {
         "source": {
           "type": "string",
           "description": "Directorio de código fuente Kotlin",
           "default": "src/main/kotlin"
+        },
+        "test-source": {
+          "type": "string",
+          "description": "Directorio de código de tests Kotlin",
+          "default": "src/test/kotlin"
         },
         "jvm_target": {
           "type": "string",
@@ -102,6 +115,7 @@
     },
     "python": {
       "type": "object",
+      "additionalProperties": false,
       "description": "Configuración para proyectos Python",
       "properties": {
         "source": {
@@ -135,6 +149,7 @@
     },
     "hooks": {
       "type": "object",
+      "additionalProperties": false,
       "description": "Hooks de ciclo de vida que se ejecutan antes/después de build y test",
       "properties": {
         "pre-build": {
@@ -174,11 +189,37 @@
         "type": "string"
       }
     },
+    "cache": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Caché remoto HTTP(S) de artefactos compilados",
+      "required": [
+        "remote"
+      ],
+      "properties": {
+        "remote": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https?://",
+          "description": "URL base HTTP(S) del servidor de caché"
+        },
+        "token": {
+          "type": "string",
+          "description": "Token Bearer; requiere HTTPS salvo localhost"
+        },
+        "push": {
+          "type": "boolean",
+          "default": false,
+          "description": "Permite subir artefactos al servidor remoto"
+        }
+      }
+    },
     "tasks": {
       "type": "object",
       "description": "Tareas personalizadas",
       "additionalProperties": {
         "type": "object",
+        "additionalProperties": false,
         "required": [
           "command"
         ],

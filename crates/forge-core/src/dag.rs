@@ -117,7 +117,8 @@ impl TaskGraph {
                     match states.get(dep.as_str()) {
                         Some(State::InProgress) => {
                             path.push(dep.as_str());
-                            let cycle_start = path.iter().position(|&n| n == dep.as_str()).unwrap_or(0);
+                            let cycle_start =
+                                path.iter().position(|&n| n == dep.as_str()).unwrap_or(0);
                             let cycle: Vec<&str> = path[cycle_start..].to_vec();
                             return Err(cycle.join(" → "));
                         }
@@ -138,9 +139,8 @@ impl TaskGraph {
         for name in &task_names {
             if states.get(name.as_str()) == Some(&State::NotVisited) {
                 let mut path = Vec::new();
-                dfs(name.as_str(), &self.edges, &mut states, &mut path).map_err(|cycle| {
-                    ForgeError::CyclicDependency { cycle }
-                })?;
+                dfs(name.as_str(), &self.edges, &mut states, &mut path)
+                    .map_err(|cycle| ForgeError::CyclicDependency { cycle })?;
             }
         }
 
@@ -149,10 +149,7 @@ impl TaskGraph {
             for dep in deps {
                 if !self.tasks.contains_key(dep) {
                     return Err(ForgeError::TaskNotFound {
-                        task_name: format!(
-                            "'{}' (referenciada por '{}')",
-                            dep, task_name
-                        ),
+                        task_name: format!("'{}' (referenciada por '{}')", dep, task_name),
                     }
                     .into());
                 }
@@ -258,7 +255,10 @@ impl TaskGraph {
             // Reducir dependencias de tareas que dependen de las completadas
             for (name, deps) in &self.edges {
                 if !completed.contains(name) {
-                    let resolved = deps.iter().filter(|d| completed.contains(d.as_str())).count();
+                    let resolved = deps
+                        .iter()
+                        .filter(|d| completed.contains(d.as_str()))
+                        .count();
                     dep_count.insert(name.clone(), deps.len() - resolved);
                 }
             }
@@ -304,16 +304,32 @@ mod tests {
     fn test_topological_order() {
         let mut graph = TaskGraph::new();
         graph
-            .add_task(make_task("clean", &[], TaskAction::Internal(InternalTask::Clean)))
+            .add_task(make_task(
+                "clean",
+                &[],
+                TaskAction::Internal(InternalTask::Clean),
+            ))
             .unwrap();
         graph
-            .add_task(make_task("compile", &["clean"], TaskAction::Internal(InternalTask::Compile)))
+            .add_task(make_task(
+                "compile",
+                &["clean"],
+                TaskAction::Internal(InternalTask::Compile),
+            ))
             .unwrap();
         graph
-            .add_task(make_task("test", &["compile"], TaskAction::Internal(InternalTask::Test)))
+            .add_task(make_task(
+                "test",
+                &["compile"],
+                TaskAction::Internal(InternalTask::Test),
+            ))
             .unwrap();
         graph
-            .add_task(make_task("package", &["compile"], TaskAction::Internal(InternalTask::Package)))
+            .add_task(make_task(
+                "package",
+                &["compile"],
+                TaskAction::Internal(InternalTask::Package),
+            ))
             .unwrap();
 
         let order = graph.topological_order().unwrap();
@@ -345,13 +361,25 @@ mod tests {
     fn test_parallel_levels() {
         let mut graph = TaskGraph::new();
         graph
-            .add_task(make_task("deps", &[], TaskAction::Internal(InternalTask::ResolveDeps)))
+            .add_task(make_task(
+                "deps",
+                &[],
+                TaskAction::Internal(InternalTask::ResolveDeps),
+            ))
             .unwrap();
         graph
-            .add_task(make_task("compile", &["deps"], TaskAction::Internal(InternalTask::Compile)))
+            .add_task(make_task(
+                "compile",
+                &["deps"],
+                TaskAction::Internal(InternalTask::Compile),
+            ))
             .unwrap();
         graph
-            .add_task(make_task("test", &["compile"], TaskAction::Internal(InternalTask::Test)))
+            .add_task(make_task(
+                "test",
+                &["compile"],
+                TaskAction::Internal(InternalTask::Test),
+            ))
             .unwrap();
         graph
             .add_task(make_task("lint", &["compile"], TaskAction::Composite))

@@ -37,12 +37,19 @@ async fn lint_java(project_dir: &Path, config: &ForgeConfig) -> Result<()> {
 
     match status {
         Ok(s) if s.success() => {
-            println!("   {}", "✅ Análisis Java completado sin errores (checkstyle)".green());
+            println!(
+                "   {}",
+                "✅ Análisis Java completado sin errores (checkstyle)".green()
+            );
         }
         Ok(s) => {
             println!(
                 "   {}",
-                format!("⚠️  Checkstyle reportó problemas (exit {})", s.code().unwrap_or(-1)).yellow()
+                format!(
+                    "⚠️  Checkstyle reportó problemas (exit {})",
+                    s.code().unwrap_or(-1)
+                )
+                .yellow()
             );
         }
         _ => {
@@ -50,10 +57,7 @@ async fn lint_java(project_dir: &Path, config: &ForgeConfig) -> Result<()> {
                 "   {}",
                 "💡 Tip: Instala 'checkstyle' para análisis estático de Java.".yellow()
             );
-            println!(
-                "   {}",
-                "   https://checkstyle.org/".dimmed()
-            );
+            println!("   {}", "   https://checkstyle.org/".dimmed());
         }
     }
     Ok(())
@@ -67,12 +71,19 @@ async fn lint_kotlin(project_dir: &Path) -> Result<()> {
 
     match status {
         Ok(s) if s.success() => {
-            println!("   {}", "✅ Análisis Kotlin completado sin errores (detekt)".green());
+            println!(
+                "   {}",
+                "✅ Análisis Kotlin completado sin errores (detekt)".green()
+            );
         }
         Ok(s) => {
             println!(
                 "   {}",
-                format!("⚠️  Detekt reportó problemas (exit {})", s.code().unwrap_or(-1)).yellow()
+                format!(
+                    "⚠️  Detekt reportó problemas (exit {})",
+                    s.code().unwrap_or(-1)
+                )
+                .yellow()
             );
         }
         _ => {
@@ -80,10 +91,7 @@ async fn lint_kotlin(project_dir: &Path) -> Result<()> {
                 "   {}",
                 "💡 Tip: Instala 'detekt' para análisis estático de Kotlin.".yellow()
             );
-            println!(
-                "   {}",
-                "   https://detekt.dev/".dimmed()
-            );
+            println!("   {}", "   https://detekt.dev/".dimmed());
         }
     }
     Ok(())
@@ -100,13 +108,20 @@ async fn lint_python(project_dir: &Path) -> Result<()> {
 
     match status {
         Ok(s) if s.success() => {
-            println!("   {}", "✅ Análisis Python completado sin errores (ruff)".green());
+            println!(
+                "   {}",
+                "✅ Análisis Python completado sin errores (ruff)".green()
+            );
             return Ok(());
         }
         Ok(s) => {
             println!(
                 "   {}",
-                format!("⚠️  Ruff reportó problemas (exit {})", s.code().unwrap_or(-1)).yellow()
+                format!(
+                    "⚠️  Ruff reportó problemas (exit {})",
+                    s.code().unwrap_or(-1)
+                )
+                .yellow()
             );
             return Ok(());
         }
@@ -122,12 +137,19 @@ async fn lint_python(project_dir: &Path) -> Result<()> {
 
     match status {
         Ok(s) if s.success() => {
-            println!("   {}", "✅ Análisis Python completado sin errores (flake8)".green());
+            println!(
+                "   {}",
+                "✅ Análisis Python completado sin errores (flake8)".green()
+            );
         }
         Ok(s) => {
             println!(
                 "   {}",
-                format!("⚠️  Flake8 reportó problemas (exit {})", s.code().unwrap_or(-1)).yellow()
+                format!(
+                    "⚠️  Flake8 reportó problemas (exit {})",
+                    s.code().unwrap_or(-1)
+                )
+                .yellow()
             );
         }
         _ => {
@@ -135,10 +157,7 @@ async fn lint_python(project_dir: &Path) -> Result<()> {
                 "   {}",
                 "💡 Tip: Instala 'ruff' (recomendado) o 'flake8' para análisis de Python.".yellow()
             );
-            println!(
-                "   {}",
-                "   pip install ruff".dimmed()
-            );
+            println!("   {}", "   pip install ruff".dimmed());
         }
     }
     Ok(())

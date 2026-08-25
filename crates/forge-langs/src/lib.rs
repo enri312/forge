@@ -3,6 +3,7 @@
 // =============================================================================
 
 pub mod java;
+mod junit;
 pub mod kotlin;
 pub mod python;
 

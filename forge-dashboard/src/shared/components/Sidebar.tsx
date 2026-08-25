@@ -1,6 +1,7 @@
 import React from 'react';
 import { Zap } from 'lucide-react';
-import { GeneralIcon, GraphIcon, CacheIcon, SettingsIcon } from '../icons';
+import { GeneralIcon, GraphIcon, CacheIcon } from '../icons';
+import { useTelemetry } from '../context/TelemetryContext';
 
 function NavItem({ icon, label, active = false, onClick }: { icon: React.ReactNode, label: string, active?: boolean, onClick?: () => void }) {
   return (
@@ -24,6 +25,7 @@ function NavItem({ icon, label, active = false, onClick }: { icon: React.ReactNo
 }
 
 export function Sidebar({ activeTab, setActiveTab }: { activeTab: string, setActiveTab: (tab: string) => void }) {
+  const { connected } = useTelemetry();
   return (
     <aside className="w-64 bg-[#0f0f0f] border-r border-[#2a2a2a] flex flex-col relative z-20 shadow-[4px_0_24px_rgba(0,0,0,0.5)]">
       {/* SVG Gradients Definition */}
@@ -52,13 +54,12 @@ export function Sidebar({ activeTab, setActiveTab }: { activeTab: string, setAct
         <NavItem icon={<GeneralIcon active={activeTab === 'general'} />} label="General" active={activeTab === 'general'} onClick={() => setActiveTab('general')} />
         <NavItem icon={<GraphIcon active={activeTab === 'graph'} />} label="Graph (DAG)" active={activeTab === 'graph'} onClick={() => setActiveTab('graph')} />
         <NavItem icon={<CacheIcon active={activeTab === 'cache'} />} label="Cache Stats" active={activeTab === 'cache'} onClick={() => setActiveTab('cache')} />
-        <NavItem icon={<SettingsIcon active={activeTab === 'settings'} />} label="Settings" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
       </nav>
       
       <div className="p-4 border-t border-[#2a2a2a] bg-[#050505]">
         <div className="flex items-center gap-3 px-3 py-2 cyber-cut bg-[#0f0f0f] border border-[#333]">
-          <div className="w-2 h-2 rounded-none bg-[#39FF14] shadow-[0_0_8px_#39FF14] animate-pulse"></div>
-          <span className="text-xs font-mono text-gray-400">Daemon: v2.4.1</span>
+          <div className={`w-2 h-2 rounded-none ${connected ? 'bg-[#39FF14] shadow-[0_0_8px_#39FF14] animate-pulse' : 'bg-[#FF3300]'}`}></div>
+          <span className="text-xs font-mono text-gray-400">SSE: {connected ? 'connected' : 'offline'}</span>
         </div>
       </div>
     </aside>

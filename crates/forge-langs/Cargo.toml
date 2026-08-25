@@ -7,7 +7,7 @@ license.workspace = true
 description = "Módulos de lenguaje para FORGE: Java, Kotlin, Python"
 
 [dependencies]
-cyrce-forge-core = { version = "0.9.0", path = "../forge-core" }
+cyrce-forge-core.workspace = true
 
 serde.workspace = true
 tokio.workspace = true
@@ -18,3 +18,4 @@ anyhow.workspace = true
 colored.workspace = true
 reqwest = { workspace = true, features = ["json"] }
 dirs.workspace = true
+sha2.workspace = true

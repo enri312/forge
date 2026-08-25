@@ -1,20 +1,20 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# FORGE Dashboard
 
-# Run and deploy your AI Studio app
+Frontend React/Vite embebido en el binario `forge`. Muestra eventos reales de compilación y caché recibidos desde el backend Rust mediante Server-Sent Events (SSE).
 
-This contains everything you need to run your app locally.
+## Desarrollo local
 
-View your app in AI Studio: https://ai.studio/apps/1697d38d-fbd2-4b6d-9952-0f1701bd4944
+```bash
+npm install
+npm run lint
+npm run dev
+```
 
-## Run Locally
+En desarrollo, el endpoint `/api/events` debe apuntar a una instancia de `forge dashboard`. Para generar los archivos que Rust incorpora al binario:
 
-**Prerequisites:**  Node.js
+```bash
+npm run build
+cargo build -p cyrce-forge-cli
+```
 
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+El servidor embebido escucha únicamente en `127.0.0.1` y añade una política CSP y cabeceras de seguridad. No requiere claves de API ni servicios de IA.

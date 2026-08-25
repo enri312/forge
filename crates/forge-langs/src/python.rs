@@ -90,9 +90,12 @@ impl PythonModule {
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
 
-        let output = cmd.output().await.map_err(|e| ForgeError::CommandNotFound {
-            command: format!("pip: {}", e),
-        })?;
+        let output = cmd
+            .output()
+            .await
+            .map_err(|e| ForgeError::CommandNotFound {
+                command: format!("pip: {}", e),
+            })?;
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
@@ -113,12 +116,11 @@ impl PythonModule {
 
     /// "Compila" un proyecto Python (verifica sintaxis).
     pub async fn compile(config: &ForgeConfig, project_dir: &Path) -> ForgeResult<()> {
+        Self::setup(config, project_dir).await?;
+
         let python_config = config.python.as_ref();
-        let source_dir = project_dir.join(
-            python_config
-                .map(|p| p.source.as_str())
-                .unwrap_or("src"),
-        );
+        let source_dir =
+            project_dir.join(python_config.map(|p| p.source.as_str()).unwrap_or("src"));
 
         if !source_dir.exists() {
             return Err(ForgeError::IoError {
@@ -153,13 +155,17 @@ impl PythonModule {
             }
             Ok(out) => {
                 let stderr = String::from_utf8_lossy(&out.stderr);
-                println!("   {}", format!("⚠️  Advertencias: {}", stderr).yellow());
+                return Err(ForgeError::TaskFailed {
+                    task_name: format!("python syntax: {}", stderr.trim()),
+                    exit_code: out.status.code().unwrap_or(-1),
+                }
+                .into());
             }
-            Err(_) => {
-                println!(
-                    "   {}",
-                    "⚠️  No se pudo verificar la sintaxis (Python no encontrado en venv)".yellow()
-                );
+            Err(e) => {
+                return Err(ForgeError::CommandNotFound {
+                    command: format!("python del entorno virtual: {}", e),
+                }
+                .into());
             }
         }
 
@@ -175,21 +181,15 @@ impl PythonModule {
             })?;
 
         let python_config = config.python.as_ref();
-        let source_dir = project_dir.join(
-            python_config
-                .map(|p| p.source.as_str())
-                .unwrap_or("src"),
-        );
+        let source_dir =
+            project_dir.join(python_config.map(|p| p.source.as_str()).unwrap_or("src"));
 
         let script_path = source_dir.join(&main_script);
 
         if !script_path.exists() {
             return Err(ForgeError::IoError {
                 path: script_path,
-                message: format!(
-                    "Script principal '{}' no encontrado",
-                    main_script
-                ),
+                message: format!("Script principal '{}' no encontrado", main_script),
             }
             .into());
         }
@@ -199,10 +199,7 @@ impl PythonModule {
 
         let python = Self::python_path(project_dir);
 
-        println!(
-            "   {}",
-            format!("🚀 Ejecutando {}...", main_script).cyan()
-        );
+        println!("   {}", format!("🚀 Ejecutando {}...", main_script).cyan());
         println!();
 
         let mut cmd = tokio::process::Command::new(&python);
@@ -211,9 +208,12 @@ impl PythonModule {
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit());
 
-        let status = cmd.status().await.map_err(|e| ForgeError::CommandNotFound {
-            command: format!("python: {}", e),
-        })?;
+        let status = cmd
+            .status()
+            .await
+            .map_err(|e| ForgeError::CommandNotFound {
+                command: format!("python: {}", e),
+            })?;
 
         if !status.success() {
             return Err(ForgeError::TaskFailed {
@@ -232,6 +232,44 @@ impl PythonModule {
 
         let python = Self::python_path(project_dir);
 
+        // pytest es el runner documentado por FORGE. Instalarlo de forma
+        // explícita evita que un módulo ausente se confunda con tests fallidos
+        // o, peor aún, con una ejecución de unittest que descubre cero tests.
+        let pytest_available = tokio::process::Command::new(&python)
+            .args(["-c", "import pytest"])
+            .current_dir(project_dir)
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status()
+            .await
+            .map(|status| status.success())
+            .unwrap_or(false);
+
+        if !pytest_available {
+            println!("   {}", "📦 Instalando runner pytest...".cyan());
+            let pip = Self::pip_path(project_dir);
+            let install = tokio::process::Command::new(&pip)
+                .args(["install", "pytest"])
+                .current_dir(project_dir)
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .output()
+                .await
+                .map_err(|e| ForgeError::CommandNotFound {
+                    command: format!("pip: {}", e),
+                })?;
+            if !install.status.success() {
+                return Err(ForgeError::TaskFailed {
+                    task_name: format!(
+                        "instalar pytest: {}",
+                        String::from_utf8_lossy(&install.stderr).trim()
+                    ),
+                    exit_code: install.status.code().unwrap_or(-1),
+                }
+                .into());
+            }
+        }
+
         println!("   {}", "🧪 Ejecutando tests Python...".cyan());
 
         let mut cmd = tokio::process::Command::new(&python);
@@ -240,35 +278,16 @@ impl PythonModule {
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit());
 
-        let status = cmd.status().await;
-
-        match status {
-            Ok(s) if s.success() => {
+        match cmd.status().await {
+            Ok(status) if status.success() => {
                 println!("   {}", "✅ Todos los tests pasaron exitosamente!".green());
             }
-            Ok(s) => {
-                // Intentar con unittest si pytest no está instalado
-                println!(
-                    "   {}",
-                    "⚠️  pytest no disponible, intentando con unittest...".yellow()
-                );
-                let mut cmd2 = tokio::process::Command::new(&python);
-                cmd2.args(["-m", "unittest", "discover", "-v"])
-                    .current_dir(project_dir)
-                    .stdout(Stdio::inherit())
-                    .stderr(Stdio::inherit());
-
-                let status2 = cmd2.status().await.map_err(|e| ForgeError::CommandNotFound {
-                    command: format!("python unittest: {}", e),
-                })?;
-
-                if !status2.success() {
-                    return Err(ForgeError::TaskFailed {
-                        task_name: "python test".to_string(),
-                        exit_code: s.code().unwrap_or(-1),
-                    }
-                    .into());
+            Ok(status) => {
+                return Err(ForgeError::TaskFailed {
+                    task_name: "python test".to_string(),
+                    exit_code: status.code().unwrap_or(-1),
                 }
+                .into());
             }
             Err(e) => {
                 return Err(ForgeError::CommandNotFound {

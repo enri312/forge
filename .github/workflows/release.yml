@@ -9,6 +9,9 @@ jobs:
   build_and_release:
     permissions:
       contents: write
+      id-token: write
+      attestations: write
+      artifact-metadata: write
     name: Build para ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -33,22 +36,25 @@ jobs:
 
     steps:
       - name: Checkout del código fuente
-        uses: actions/checkout@v4
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Setup de Rust Toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master 2026-08-25
         with:
+          toolchain: stable
           targets: ${{ matrix.target }}
 
       - name: Setup Node.js (Dashboard HTML)
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          node-version: 20
+          node-version: 22
+          cache: npm
+          cache-dependency-path: forge-dashboard/package-lock.json
 
       - name: ⚡ Compilar Dashboard Frontend
         working-directory: forge-dashboard
         run: |
-          npm install
+          npm ci
           npm run build
 
       - name: Build Nativo Optimizada (Release)
@@ -70,10 +76,34 @@ jobs:
           Compress-Archive -Path ${{ matrix.artifact_name }} -DestinationPath ../../../${{ matrix.asset_name }}
           cd ../../../
 
+      - name: Generar SHA-256 (UNIX)
+        if: matrix.os != 'windows-latest'
+        shell: bash
+        run: |
+          if command -v sha256sum >/dev/null 2>&1; then
+            sha256sum "${{ matrix.asset_name }}" > "${{ matrix.asset_name }}.sha256"
+          else
+            shasum -a 256 "${{ matrix.asset_name }}" > "${{ matrix.asset_name }}.sha256"
+          fi
+
+      - name: Generar SHA-256 (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath '${{ matrix.asset_name }}').Hash.ToLowerInvariant()
+          "$hash  ${{ matrix.asset_name }}" | Out-File -Encoding ascii '${{ matrix.asset_name }}.sha256'
+
+      - name: Firmar procedencia del artefacto
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-path: ${{ matrix.asset_name }}
+
       # Subir a la página de Releases de GitHub
       - name: Subir binario precompilado a Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@c12583777ecdfd3be55c69cf75464299dc01057e # v3
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: ${{ matrix.asset_name }}
+          files: |
+            ${{ matrix.asset_name }}
+            ${{ matrix.asset_name }}.sha256
           token: ${{ secrets.GITHUB_TOKEN }}

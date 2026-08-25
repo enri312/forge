@@ -1,9 +1,35 @@
 # Todos los cambios notables del proyecto FORGE se documentan aquí.
 # Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/).
 
-## [0.9.0] — 2026-02-25
+## [Unreleased]
+
+### Security
+- Validación estricta de `forge.toml`, rutas, coordenadas Maven/PyPI y grafos de tareas; el LSP usa las mismas reglas que la CLI.
+- Restauración de caché remota aislada en staging, con límites de descarga/extracción y rechazo de traversal, enlaces y archivos no regulares.
+- Descargas Maven, PyPI y JUnit con timeout, redirecciones limitadas, límites de tamaño y validación básica de artefactos.
+- Artefactos Maven y POM verificados contra SHA-256 publicado o SHA-1 legado cuando Central no ofrece uno más fuerte; JUnit está fijado a un SHA-256 conocido.
+- Dashboard limitado a localhost con cabeceras de seguridad; dependencias Rust y npm actualizadas sin avisos conocidos en las auditorías.
+- CI reproducible con `npm ci`, auditorías bloqueantes, SBOM CycloneDX, checksums de releases y procedencia firmada mediante GitHub/Sigstore.
+
+### Fixed
+- La caché de compilación ahora se invalida por configuración, perfil, plataforma y cambios en dependencias locales `path:`.
+- Las tareas personalizadas respetan `depends-on`, detectan ciclos y propagan correctamente los errores.
+- Los fallos de sintaxis y de `pytest` ya no se reportan como compilaciones o pruebas exitosas.
+- La telemetría y el dashboard distinguen éxito, error, caché local y caché remota sin métricas simuladas.
+
+## [0.11.0] — 2026-02-26
 
 ### Added
+- **Global CAS Repository (Content-Addressable Storage)**: Transición absoluta a un almacenamiento global inmutable (`~/.forge/repository/cas`). Descarga módulos Maven/PyPI referenciados por su Hash SHA-256 deduplicando dependencias binarias exactas a través del sistema.
+- **Zero-Copy Fetching (Hardlinks)**: FORGE abandona la copia de redundancia. Los subdirectorios locales de proyecto (`.forge/deps`) ahora enlazan $O(1)$ atómicamente al host CAS Global economizando Gigabytes de disco y agilizando las instalaciones masivas a cero-milisegundos.
+- **Resolución de Classpath Híbrido**: Soporte nativo para inferir auto-mágicamente la compatibilidad `path:` sobre estructuras de carpetas pre-existentes no compiladas bajo Forge (ej. importando en caliente librerías Gradle/Maven externas que contengan `build/classes/java` u homónimos sin reescribir manifiestos).
+
+## [0.10.0] — 2026-02-25
+
+### Added
+- **Maven Classifiers Universales**: Analizador sintáctico ampliado admitiendo extensiones parametrizadas OS-Specific (ej. `groupId:artifactId:version:classifier`). Vital para resolver arquitecturas nativas JNI como OpenJFX (`:win`, `:mac`, `:linux`) reescribiendo uniformemente los localizadores URL.
+
+## [0.9.0] — 2026-02-25
 - **Arquitectura Multi-Módulo (DAG Inter-Proyecto)**: Soporte completo para iteraciones complejas entre submódulos locales mediante la directiva `path:` dentro del `forge.toml`. El motor detectará cualquier referencia cruzada cíclica inyectada por error emitiendo un Warning limpio y paralelizado de toda otra capa agnóstica a este loop a través de `tokio::spawn`.
 - **Inyección Transversal de Classpaths (Java/Kotlin)**: Se rediseñaron los parsers nativos en las etapas de inter-compilación y ejecución (`java.rs` y `kotlin.rs`). Los mismos descubren recursivamente proyectos in-workspace construyendo los classpaths interconectados al invocar `javac` y `kotlinc`.
 - **Estabilidad de Tokio**: Solución estructural a los *falsos positivos* de compilación de Rust `E0283` mediante `Boxed Futures` rompiendo la retro-referenciación en la dependencia de asincronicidad.
@@ -23,7 +49,7 @@
 
 ### Added
 - **Servidor LSP (`forge-lsp`)**: Binario dedicado al Language Server Protocol (LSP). Evalúa `forge.toml` asíncronamente mientras el usuario escribe, devolviendo diagnósticos inmediatos (errores de sintaxis) y proveyendo un motor base para *Hover tooltips* sobre llaves de configuración de compilación.
-- **Caché Distribuido/Remoto**: FORGE ahora soporta subir y descargar el flag de dependencias y binarios ya compilados a través de la red (HTTP/S3) usando la nueva sección opcional `[cache]` en `forge.toml`. Si un desarrollador o máquina de CI/CD ya resolvió este nodo con su hash, FORGE extrae del tar.gz remoto y omite la compilación local (`⚡ Caché remoto restaurado`), ahorrando ancho de banda y latencia.
+- **Caché Distribuido/Remoto**: FORGE ahora soporta subir y descargar dependencias y binarios ya compilados a través de HTTP(S) usando la nueva sección opcional `[cache]` en `forge.toml`. Si un desarrollador o máquina de CI/CD ya resolvió este nodo con su hash, FORGE extrae del tar.gz remoto y omite la compilación local (`⚡ Caché remoto restaurado`), ahorrando ancho de banda y latencia.
 
 ## [0.5.0] — 2026-02-24
 
@@ -56,8 +82,8 @@
 ### 🧪 Soporte Nativo para Testing (Test Runners)
 
 #### Nuevas Funcionalidades
-- **Runner de Java/Kotlin (JUnit 6)**: Resolvimiento automático de dependencias en `[test-dependencies]`, auto-descarga global del ejecutable `junit-platform-console-standalone` y parseo en vivo del árbol de la prueba en formato consola.
-- **Runner de Python (pytest)**: `forge test` integra llamadas fluidas al framework `pytest` montado sobre un VirtualEnv transparente, con failover a `unittest`.
+- **Runner de Java/Kotlin (JUnit Platform)**: Resolución automática de dependencias en `[test-dependencies]`, auto-descarga global de `junit-platform-console-standalone` y salida detallada de pruebas en consola.
+- **Runner de Python (pytest)**: `forge test` ejecuta `pytest` dentro del VirtualEnv administrado por FORGE y propaga cualquier fallo al proceso invocador.
 - **Inyección por Plantillas Out-of-the-Box**: `forge new -l <lang>` inyecta un framework base con aserciones automáticas 1+1=2 transparentes listas para ejecutar. Cero configuración inicial necesaria. 
 
 #### Mejoras Internas

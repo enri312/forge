@@ -11,7 +11,12 @@ pub async fn run_hooks(hooks: &[String], label: &str, project_dir: &Path) -> Res
 
     println!(
         "   {}",
-        format!("🪝 Ejecutando hooks {}... ({} comando(s))", label, hooks.len()).cyan()
+        format!(
+            "🪝 Ejecutando hooks {}... ({} comando(s))",
+            label,
+            hooks.len()
+        )
+        .cyan()
     );
 
     for cmd_str in hooks {
@@ -34,9 +39,18 @@ pub async fn run_hooks(hooks: &[String], label: &str, project_dir: &Path) -> Res
         if !status.success() {
             println!(
                 "   {}",
-                format!("❌ Hook '{}' falló (exit code: {})", cmd_str, status.code().unwrap_or(-1)).red()
+                format!(
+                    "❌ Hook '{}' falló (exit code: {})",
+                    cmd_str,
+                    status.code().unwrap_or(-1)
+                )
+                .red()
             );
-            return Err(anyhow::anyhow!("Hook '{}' falló en fase {}", cmd_str, label));
+            return Err(anyhow::anyhow!(
+                "Hook '{}' falló en fase {}",
+                cmd_str,
+                label
+            ));
         }
     }
 

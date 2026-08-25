@@ -24,3 +24,9 @@ __pycache__/
 *.pyo
 .env
 venv/
+
+# Auditorías y diagnósticos locales
+bom.json
+*.cdx.json
+fetch_logs.py
+jobs_output.json

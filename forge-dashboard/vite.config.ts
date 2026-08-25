@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import { defineConfig } from 'vite';
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(() => {
   return {
     plugins: [react(), tailwindcss()],
     resolve: {
@@ -12,8 +12,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
+      // Permite desactivar HMR en entornos CI o sesiones remotas.
       hmr: process.env.DISABLE_HMR !== 'true',
     },
   };

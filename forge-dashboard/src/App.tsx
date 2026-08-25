@@ -4,7 +4,6 @@ import { Header } from './shared/components/Header';
 import { GeneralTab } from './features/general/GeneralTab';
 import { GraphTab } from './features/graph/GraphTab';
 import { CacheTab } from './features/cache/CacheTab';
-import { SettingsTab } from './features/settings/SettingsTab';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('general');
@@ -27,7 +26,6 @@ export default function App() {
             {activeTab === 'general' && <GeneralTab />}
             {activeTab === 'graph' && <GraphTab />}
             {activeTab === 'cache' && <CacheTab />}
-            {activeTab === 'settings' && <SettingsTab />}
           </div>
         </div>
       </main>

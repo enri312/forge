@@ -30,7 +30,7 @@ forge new mi-app -l java
 cd mi-app
 forge build    # Compila
 forge run      # Ejecuta
-forge test     # Tests con JUnit 6 (auto-descargado)
+forge test     # Tests con JUnit Platform o pytest (auto-configurados)
 ```
 
 ### Crear proyecto Kotlin:
@@ -152,6 +152,7 @@ post-test = ["echo Limpiando datos de test"]
 | Memoria | 500MB-2GB | ~15MB |
 | Config | Groovy/Kotlin DSL | TOML simple |
 | Multi-lang | Solo JVM | Java + Kotlin + Python |
+| Almacenamiento | Copias Redundantes pesadas | Almacén Global CAS (Zero-Copy) |
 | Curva | Alta | Mínima |
 
 ---

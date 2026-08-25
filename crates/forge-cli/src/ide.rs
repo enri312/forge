@@ -17,7 +17,10 @@ pub async fn cmd_ide(project_dir: &Path, target: &str) -> Result<()> {
         "vscode" => generate_vscode(project_dir, &config),
         "intellij" => generate_intellij(project_dir, &config),
         _ => {
-            println!("{}","❌ Editor no soportado. Usa 'vscode' o 'intellij'.".red());
+            println!(
+                "{}",
+                "❌ Editor no soportado. Usa 'vscode' o 'intellij'.".red()
+            );
             Ok(())
         }
     }
@@ -80,7 +83,8 @@ fn generate_vscode(project_dir: &Path, config: &ForgeConfig) -> Result<()> {
 
     // launch.json dependent on lang
     let launch = match config.project.lang.as_str() {
-        "java" | "kotlin" => r#"{
+        "java" | "kotlin" => {
+            r#"{
     "version": "0.2.0",
     "configurations": [
         {
@@ -91,8 +95,10 @@ fn generate_vscode(project_dir: &Path, config: &ForgeConfig) -> Result<()> {
             "projectName": "${workspaceFolderBasename}"
         }
     ]
-}"#,
-        "python" => r#"{
+}"#
+        }
+        "python" => {
+            r#"{
     "version": "0.2.0",
     "configurations": [
         {
@@ -103,16 +109,22 @@ fn generate_vscode(project_dir: &Path, config: &ForgeConfig) -> Result<()> {
             "console": "integratedTerminal"
         }
     ]
-}"#,
-        _ => r#"{
+}"#
+        }
+        _ => {
+            r#"{
     "version": "0.2.0",
     "configurations": []
-}"#,
+}"#
+        }
     };
-    
+
     fs::write(vscode_dir.join("launch.json"), launch)?;
 
-    println!("{}","✅ Archivos de configuración para VS Code generados en .vscode/".green());
+    println!(
+        "{}",
+        "✅ Archivos de configuración para VS Code generados en .vscode/".green()
+    );
     Ok(())
 }
 
@@ -123,19 +135,22 @@ fn generate_intellij(project_dir: &Path, config: &ForgeConfig) -> Result<()> {
     }
 
     let project_name = &config.project.name;
-    
-    let modules_xml = format!(r#"<?xml version="1.0" encoding="UTF-8"?>
+
+    let modules_xml = format!(
+        r#"<?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/{project_name}.iml" filepath="$PROJECT_DIR$/.idea/{project_name}.iml" />
     </modules>
   </component>
-</project>"#);
+</project>"#
+    );
     fs::write(idea_dir.join("modules.xml"), modules_xml)?;
 
     let iml_content = match config.project.lang.as_str() {
-        "java" | "kotlin" => r#"<?xml version="1.0" encoding="UTF-8"?>
+        "java" | "kotlin" => {
+            r#"<?xml version="1.0" encoding="UTF-8"?>
 <module type="JAVA_MODULE" version="4">
   <component name="NewModuleRootManager" inherit-compiler-output="true">
     <exclude-output />
@@ -150,8 +165,10 @@ fn generate_intellij(project_dir: &Path, config: &ForgeConfig) -> Result<()> {
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
-</module>"#,
-        "python" => r#"<?xml version="1.0" encoding="UTF-8"?>
+</module>"#
+        }
+        "python" => {
+            r#"<?xml version="1.0" encoding="UTF-8"?>
 <module type="PYTHON_MODULE" version="4">
   <component name="NewModuleRootManager" inherit-compiler-output="true">
     <exclude-output />
@@ -163,12 +180,18 @@ fn generate_intellij(project_dir: &Path, config: &ForgeConfig) -> Result<()> {
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
-</module>"#,
-        _ => r#"<?xml version="1.0" encoding="UTF-8"?><module type="WEB_MODULE" version="4"></module>"#,
+</module>"#
+        }
+        _ => {
+            r#"<?xml version="1.0" encoding="UTF-8"?><module type="WEB_MODULE" version="4"></module>"#
+        }
     };
 
     fs::write(idea_dir.join(format!("{}.iml", project_name)), iml_content)?;
 
-    println!("{}","✅ Archivos de configuración para IntelliJ generados en .idea/".green());
+    println!(
+        "{}",
+        "✅ Archivos de configuración para IntelliJ generados en .idea/".green()
+    );
     Ok(())
 }

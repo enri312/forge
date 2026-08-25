@@ -7,15 +7,21 @@ import { useTelemetry } from '../../shared/context/TelemetryContext';
 
 export function GeneralTab() {
   const { logs, cacheStats, tasks } = useTelemetry();
+  const taskList = Object.values(tasks);
+  const total = taskList.length;
+  const completed = taskList.filter(task => task.state === 'success' || task.state === 'cached').length;
+  const running = taskList.filter(task => task.state === 'running').length;
+  const cached = taskList.filter(task => task.state === 'cached').length;
+  const pct = (value: number) => total > 0 ? Math.round((value / total) * 100) : 0;
 
   return (
     <div className="grid grid-cols-12 gap-6">
       {/* Card 1: Build Stats */}
       <DashboardCard title="Compilation Stats" className="col-span-12 lg:col-span-4 border-t-2 border-t-[#FFCC00]">
         <div className="space-y-5 mt-2">
-          <StatBar label="Dependency Resolution" value="140ms" percent={16} color="bg-[#FFCC00]" glow="rgba(255,204,0,0.5)" />
-          <StatBar label="Kotlin Compilation" value="450ms" percent={53} color="bg-[#FF3300]" glow="rgba(255,51,0,0.5)" />
-          <StatBar label="JUnit Tasks" value="250ms" percent={31} color="bg-[#00FFFF]" glow="rgba(0,255,255,0.5)" />
+          <StatBar label="Completed" value={`${completed}/${total}`} percent={pct(completed)} color="bg-[#39FF14]" glow="rgba(57,255,20,0.5)" />
+          <StatBar label="Running" value={`${running}/${total}`} percent={pct(running)} color="bg-[#FF3300]" glow="rgba(255,51,0,0.5)" />
+          <StatBar label="Cache Hits" value={`${cached}/${total}`} percent={pct(cached)} color="bg-[#00FFFF]" glow="rgba(0,255,255,0.5)" />
         </div>
       </DashboardCard>
 
@@ -38,24 +44,25 @@ export function GeneralTab() {
             <span className="w-2 h-2 bg-[#00FFFF] shadow-[0_0_5px_#00FFFF]"></span> Local
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 bg-[#FFCC00] shadow-[0_0_5px_#FFCC00]"></span> S3 Remote
+            <span className="w-2 h-2 bg-[#FFCC00] shadow-[0_0_5px_#FFCC00]"></span> Remote HTTP
           </div>
         </div>
       </DashboardCard>
 
       {/* Card 3: DAG - Dependency Graph */}
-      <DashboardCard title="Dependency Graph (DAG)" className="col-span-12 lg:col-span-4 border-t-2 border-t-[#FF00FF]">
+      <DashboardCard title="Observed Task Flow" className="col-span-12 lg:col-span-4 border-t-2 border-t-[#FF00FF]">
         <div className="relative h-48 flex items-center justify-center mt-2">
-          <div className="flex items-center justify-center w-full">
-            <DagNode label="core" status={tasks['core']?.state || 'pending'} />
-            <div className="w-6 h-0.5 bg-gradient-to-r from-[#39FF14] to-[#FF00FF] relative shadow-[0_0_8px_rgba(255,0,255,0.5)] mx-1 flex-shrink-0">
-              <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 border-t-2 border-r-2 border-[#FF00FF] transform rotate-45"></div>
-            </div>
-            <DagNode label="auth" status={tasks['auth']?.state || 'pending'} />
-            <div className="w-6 h-0.5 bg-gradient-to-r from-[#FF00FF] to-[#FF3300] relative shadow-[0_0_8px_rgba(255,51,0,0.5)] mx-1 flex-shrink-0">
-              <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 border-t-2 border-r-2 border-[#FF3300] transform rotate-45"></div>
-            </div>
-            <DagNode label="api" status={tasks['api']?.state || 'pending'} />
+          <div className="flex items-center justify-center w-full overflow-x-auto">
+            {taskList.length === 0 ? (
+              <span className="text-xs text-gray-500 font-mono">Waiting for build events…</span>
+            ) : taskList.slice(-3).map((task, index, shown) => (
+              <React.Fragment key={task.name}>
+                <DagNode label={task.name} status={task.state} />
+                {index < shown.length - 1 && (
+                  <div className="w-6 h-0.5 bg-[#FF00FF] shadow-[0_0_8px_rgba(255,0,255,0.5)] mx-1 flex-shrink-0"></div>
+                )}
+              </React.Fragment>
+            ))}
           </div>
         </div>
       </DashboardCard>

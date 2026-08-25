@@ -9,9 +9,9 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.9.0"
+version = "0.11.0"
 edition = "2021"
-authors = ["SkyShoot <enri312>"]
+authors = ["SkyShoot"]
 license = "MIT"
 description = "🔥 FORGE — Build system de nueva generación"
 homepage = "https://github.com/enri312/forge"
@@ -38,10 +38,11 @@ reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-feature
 
 # Hashing para caché incremental
 sha2 = "0.10"
+sha1 = "0.10"
 
 # Colores y UX en terminal
 colored = "2.1"
-indicatif = "0.17"
+indicatif = "0.18"
 console = "0.15"
 
 # Utilidades de sistema de archivos
@@ -57,17 +58,17 @@ thiserror = "1.0"
 anyhow = "1.0"
 
 # XML parser (para POMs de Maven)
-quick-xml = { version = "0.37", features = ["serialize"] }
+quick-xml = { version = "0.41", features = ["serialize"] }
 
 # File watching (watch mode)
-notify = { version = "7.0", features = ["macos_kqueue"] }
+notify = { version = "8.2", features = ["macos_kqueue"] }
 ctrlc = "3.4"
 
 # Dependencias Internas (FORGE crates)
-cyrce-forge-core = { version = "0.9.0", path = "crates/forge-core" }
-cyrce-forge-deps = { version = "0.9.0", path = "crates/forge-deps" }
-cyrce-forge-langs = { version = "0.9.0", path = "crates/forge-langs" }
-cyrce-forge-lsp = { version = "0.9.0", path = "crates/forge-lsp" }
+cyrce-forge-core = { version = "0.11.0", path = "crates/forge-core" }
+cyrce-forge-deps = { version = "0.11.0", path = "crates/forge-deps" }
+cyrce-forge-langs = { version = "0.11.0", path = "crates/forge-langs" }
+cyrce-forge-lsp = { version = "0.11.0", path = "crates/forge-lsp" }
 
 # Language Server Protocol (LSP)
 tower-lsp = "0.20.0"

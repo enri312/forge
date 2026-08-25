@@ -3,7 +3,7 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 // === TypeScript Interfaces para los eventos disparados desde Rust ===
 
 export interface TaskStatus {
-    name: String;
+    name: string;
     state: 'pending' | 'running' | 'success' | 'cached' | 'failed';
     time_ms?: number;
     cache_source?: string;
@@ -21,11 +21,9 @@ export interface TelemetryState {
     tasks: Record<string, TaskStatus>;
     logs: LogEntry[];
     cacheStats: {
-        tSavedSecs: number;
         hitRate: number;
-        bandwidthSavedGb: number;
         localHits: number;
-        s3Hits: number;
+        remoteHits: number;
         misses: number;
     };
 }
@@ -35,19 +33,12 @@ const TelemetryContext = createContext<TelemetryState | undefined>(undefined);
 export function TelemetryProvider({ children }: { children: ReactNode }) {
     const [state, setState] = useState<TelemetryState>({
         connected: false,
-        tasks: {
-            'core': { name: 'core', state: 'pending' },
-            'auth': { name: 'auth', state: 'pending' },
-            'database': { name: 'database', state: 'pending' },
-            'api': { name: 'api', state: 'pending' },
-        },
+        tasks: {},
         logs: [],
         cacheStats: {
-            tSavedSecs: 0,
             hitRate: 0,
-            bandwidthSavedGb: 0,
             localHits: 0,
-            s3Hits: 0,
+            remoteHits: 0,
             misses: 0,
         }
     });
@@ -72,51 +63,59 @@ export function TelemetryProvider({ children }: { children: ReactNode }) {
                 const data = JSON.parse(event.data);
 
                 setState(prev => {
-                    const newState = { ...prev };
-
                     if (data.type === 'TaskStarted') {
-                        newState.tasks = {
-                            ...prev.tasks,
-                            [data.name]: { name: data.name, state: 'running' }
+                        return {
+                            ...prev,
+                            tasks: {
+                                ...prev.tasks,
+                                [data.name]: { name: data.name, state: 'running' }
+                            }
                         };
                     }
                     else if (data.type === 'TaskFinished') {
-                        let nextState: 'success' | 'cached' = 'success';
-                        if (data.cached) {
-                            nextState = 'cached';
-                            newState.cacheStats.tSavedSecs += (data.time_ms / 1000.0);
-                            if (data.cache_source === 's3') newState.cacheStats.s3Hits++;
-                            else newState.cacheStats.localHits++;
-                        } else {
-                            newState.cacheStats.misses++;
+                        let nextState: 'success' | 'cached' | 'failed' = data.success === false
+                            ? 'failed'
+                            : data.cached ? 'cached' : 'success';
+                        const cacheStats = { ...prev.cacheStats };
+                        if (data.success !== false && data.cached) {
+                            if (data.cache_source === 'remote') cacheStats.remoteHits++;
+                            else cacheStats.localHits++;
+                        } else if (data.success !== false) {
+                            cacheStats.misses++;
                         }
 
-                        // A recalculator naive del hitRate general
-                        let total = newState.cacheStats.misses + newState.cacheStats.localHits + newState.cacheStats.s3Hits;
-                        let hits = newState.cacheStats.localHits + newState.cacheStats.s3Hits;
-                        if (total > 0) newState.cacheStats.hitRate = Math.round((hits / total) * 100);
+                        const total = cacheStats.misses + cacheStats.localHits + cacheStats.remoteHits;
+                        const hits = cacheStats.localHits + cacheStats.remoteHits;
+                        if (total > 0) cacheStats.hitRate = Math.round((hits / total) * 100);
 
-                        newState.tasks = {
-                            ...prev.tasks,
-                            [data.name]: {
-                                name: data.name,
-                                state: nextState,
-                                time_ms: data.time_ms,
-                                cache_source: data.cache_source
+                        return {
+                            ...prev,
+                            cacheStats,
+                            tasks: {
+                                ...prev.tasks,
+                                [data.name]: {
+                                    name: data.name,
+                                    state: nextState,
+                                    time_ms: data.time_ms,
+                                    cache_source: data.cache_source
+                                }
                             }
                         };
                     }
                     else if (data.type === 'LogMessage') {
                         logCounter++;
-                        newState.logs = [...prev.logs, {
-                            id: logCounter,
-                            level: data.level,
-                            text: data.text,
-                            timestamp: new Date().toISOString()
-                        }];
+                        return {
+                            ...prev,
+                            logs: [...prev.logs, {
+                                id: logCounter,
+                                level: data.level,
+                                text: data.text,
+                                timestamp: new Date().toISOString()
+                            }]
+                        };
                     }
 
-                    return newState;
+                    return prev;
                 });
             } catch (err) {
                 console.error('Error parsing SSE event', err);
@@ -136,7 +135,7 @@ export function TelemetryProvider({ children }: { children: ReactNode }) {
     );
 }
 
-export function useTelemetry() {
+export function useTelemetry(): TelemetryState {
     const context = useContext(TelemetryContext);
     if (context === undefined) {
         throw new Error('useTelemetry must be used within a TelemetryProvider');

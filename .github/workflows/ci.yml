@@ -10,6 +10,9 @@ env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
 
+permissions:
+  contents: read
+
 jobs:
   # ── Tests y Build ──────────────────────────────────────────
   build:
@@ -23,16 +26,16 @@ jobs:
 
     steps:
       - name: 📥 Checkout código
-        uses: actions/checkout@v4
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: 🦀 Instalar Rust ${{ matrix.rust }}
-        uses: dtolnay/rust-toolchain@master
+        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master 2026-08-25
         with:
           toolchain: ${{ matrix.rust }}
           components: clippy, rustfmt
 
       - name: 💾 Cache Cargo
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: |
             ~/.cargo/bin/
@@ -44,14 +47,18 @@ jobs:
           restore-keys: ${{ runner.os }}-cargo-
 
       - name: Setup Node.js (Dashboard HTML)
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          node-version: 20
+          node-version: 22
+          cache: npm
+          cache-dependency-path: forge-dashboard/package-lock.json
 
       - name: ⚡ Compilar Dashboard Frontend
         working-directory: forge-dashboard
         run: |
-          npm install
+          npm ci
+          npm run lint
+          npm audit --audit-level=moderate
           npm run build
 
       - name: 🔨 Build
@@ -62,17 +69,81 @@ jobs:
 
       - name: 📋 Clippy (linter)
         run: cargo clippy --workspace -- -D warnings
-        continue-on-error: true
 
       - name: 🎨 Formato
         run: cargo fmt --all -- --check
-        continue-on-error: true
+
+  # ── Cadena de suministro ───────────────────────────────────
+  supply-chain:
+    name: 🔐 Audit & SBOM
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout código
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: 🦀 Instalar Rust estable
+        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master 2026-08-25
+        with:
+          toolchain: stable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            forge-dashboard/package-lock.json
+            editors/vscode/package-lock.json
+
+      - name: 🔎 Auditar dependencias Rust
+        run: |
+          cargo install cargo-audit --version 0.22.2 --locked
+          cargo audit --deny warnings
+
+      - name: 🔎 Auditar Dashboard
+        working-directory: forge-dashboard
+        run: |
+          npm ci
+          npm audit --audit-level=moderate
+
+      - name: 🔎 Auditar extensión VS Code
+        working-directory: editors/vscode
+        run: |
+          npm ci
+          npm audit --audit-level=moderate
+
+      - name: 📋 Generar SBOM Rust (CycloneDX)
+        run: |
+          cargo install cargo-cyclonedx --version 0.5.9 --locked
+          cargo cyclonedx --format json --spec-version 1.5
+
+      - name: 📋 Generar SBOM Dashboard (CycloneDX)
+        working-directory: forge-dashboard
+        run: |
+          mkdir -p ../sbom
+          npx --yes @cyclonedx/cyclonedx-npm@5.0.0 --package-lock-only --ignore-npm-errors --output-reproducible --output-file ../sbom/forge-dashboard.cdx.json
+
+      - name: 📋 Generar SBOM extensión VS Code (CycloneDX)
+        working-directory: editors/vscode
+        run: |
+          mkdir -p ../../sbom
+          npx --yes @cyclonedx/cyclonedx-npm@5.0.0 --package-lock-only --ignore-npm-errors --output-reproducible --output-file ../../sbom/forge-vscode.cdx.json
+
+      - name: 📤 Publicar SBOMs
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: forge-sbom-cyclonedx
+          if-no-files-found: error
+          path: |
+            crates/*/*.cdx.json
+            sbom/*.cdx.json
 
   # ── Build Release ──────────────────────────────────────────
   release-build:
     name: 📦 Release Build
     runs-on: ${{ matrix.os }}
-    needs: build
+    needs: [build, supply-chain]
     if: github.ref == 'refs/heads/main'
     strategy:
       matrix:
@@ -88,28 +159,31 @@ jobs:
             artifact: forge
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master 2026-08-25
         with:
+          toolchain: stable
           targets: ${{ matrix.target }}
 
       - name: Setup Node.js (Dashboard HTML)
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          node-version: 20
+          node-version: 22
+          cache: npm
+          cache-dependency-path: forge-dashboard/package-lock.json
 
       - name: ⚡ Compilar Dashboard Frontend
         working-directory: forge-dashboard
         run: |
-          npm install
+          npm ci
           npm run build
 
       - name: 📦 Build Release
         run: cargo build --release --target ${{ matrix.target }}
 
       - name: 📤 Subir artefacto
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: forge-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/${{ matrix.artifact }}

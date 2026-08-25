@@ -6,7 +6,7 @@
 // Utiliza la crate `tower-lsp` para manejar la comunicación JSON-RPC.
 // =============================================================================
 
-use std::path::PathBuf;
+use cyrce_forge_core::config::ForgeConfig;
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
@@ -40,7 +40,10 @@ impl LanguageServer for ForgeBackend {
 
     async fn initialized(&self, _: InitializedParams) {
         self.client
-            .log_message(MessageType::INFO, "🔥 FORGE LSP Server inicializado exitosamente.")
+            .log_message(
+                MessageType::INFO,
+                "🔥 FORGE LSP Server inicializado exitosamente.",
+            )
             .await;
     }
 
@@ -55,12 +58,14 @@ impl LanguageServer for ForgeBackend {
                 format!("Abierto: {}", params.text_document.uri.as_str()),
             )
             .await;
-        self.validate_document(params.text_document.uri, params.text_document.text).await;
+        self.validate_document(params.text_document.uri, params.text_document.text)
+            .await;
     }
 
     async fn did_change(&self, mut params: DidChangeTextDocumentParams) {
         if let Some(change) = params.content_changes.pop() {
-            self.validate_document(params.text_document.uri, change.text).await;
+            self.validate_document(params.text_document.uri, change.text)
+                .await;
         }
     }
 
@@ -88,12 +93,20 @@ impl ForgeBackend {
         // 1. Verificación básica de sintaxis TOML
         match toml::from_str::<toml::Value>(&text) {
             Ok(_) => {
-                // Sintaxis válida, ahora validar contra la estructura de ForgeConfig
-                // Usamos un mock path ya que solo parseamos el string
-                let _mock_path = PathBuf::from("forge.toml");
-                
-                // TODO: ForgeConfig::load lee del disco, necesitamos parsear del texto
-                // Para MVP publicaremos un diagnotico básico si falla el parseo crudo
+                // La sintaxis es válida; aplicar exactamente la misma validación
+                // estructural y semántica que usa la CLI.
+                if let Err(error) = ForgeConfig::parse(&text) {
+                    diagnostics.push(Diagnostic {
+                        range: Range {
+                            start: Position::new(0, 0),
+                            end: Position::new(0, 1),
+                        },
+                        severity: Some(DiagnosticSeverity::ERROR),
+                        message: error.to_string(),
+                        source: Some("forge-lsp".to_string()),
+                        ..Default::default()
+                    });
+                }
             }
             Err(e) => {
                 // Extraer línea/columna del error si es posible
@@ -105,7 +118,7 @@ impl ForgeBackend {
                         let col = prefix.lines().last().unwrap_or("").len() as u32;
                         (line, col)
                     }
-                    None => (0, 0)
+                    None => (0, 0),
                 };
 
                 let diagnostic = Diagnostic {
@@ -122,7 +135,9 @@ impl ForgeBackend {
             }
         }
 
-        self.client.publish_diagnostics(uri, diagnostics, None).await;
+        self.client
+            .publish_diagnostics(uri, diagnostics, None)
+            .await;
     }
 }
 

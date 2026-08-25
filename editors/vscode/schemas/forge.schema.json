@@ -3,10 +3,12 @@
   "title": "FORGE Build Configuration",
   "description": "Esquema de configuración para forge.toml — Build system FORGE",
   "type": "object",
+  "additionalProperties": false,
   "required": ["project"],
   "properties": {
     "project": {
       "type": "object",
+      "additionalProperties": false,
       "description": "Metadatos del proyecto",
       "required": ["name", "lang"],
       "properties": {
@@ -29,6 +31,10 @@
           "type": "string",
           "description": "Descripción breve del proyecto"
         },
+        "java-version": {
+          "type": "string",
+          "description": "Versión objetivo de Java/JDK con prioridad sobre java.target"
+        },
         "output_dir": {
           "type": "string",
           "description": "Directorio de salida de compilación",
@@ -38,12 +44,18 @@
     },
     "java": {
       "type": "object",
+      "additionalProperties": false,
       "description": "Configuración para proyectos Java",
       "properties": {
         "source": {
           "type": "string",
           "description": "Directorio de código fuente Java",
           "default": "src/main/java"
+        },
+        "test-source": {
+          "type": "string",
+          "description": "Directorio de código de tests Java",
+          "default": "src/test/java"
         },
         "target": {
           "type": "string",
@@ -59,12 +71,18 @@
     },
     "kotlin": {
       "type": "object",
+      "additionalProperties": false,
       "description": "Configuración para proyectos Kotlin",
       "properties": {
         "source": {
           "type": "string",
           "description": "Directorio de código fuente Kotlin",
           "default": "src/main/kotlin"
+        },
+        "test-source": {
+          "type": "string",
+          "description": "Directorio de código de tests Kotlin",
+          "default": "src/test/kotlin"
         },
         "jvm_target": {
           "type": "string",
@@ -79,6 +97,7 @@
     },
     "python": {
       "type": "object",
+      "additionalProperties": false,
       "description": "Configuración para proyectos Python",
       "properties": {
         "source": {
@@ -103,11 +122,50 @@
         "type": "string"
       }
     },
+    "test-dependencies": {
+      "type": "object",
+      "description": "Dependencias exclusivas para testing",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "hooks": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Hooks de ciclo de vida del build",
+      "properties": {
+        "pre-build": { "type": "array", "items": { "type": "string" } },
+        "post-build": { "type": "array", "items": { "type": "string" } },
+        "pre-test": { "type": "array", "items": { "type": "string" } },
+        "post-test": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "modules": {
+      "type": "array",
+      "description": "Sub-módulos del workspace",
+      "items": { "type": "string" }
+    },
+    "cache": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Caché remoto HTTP(S) de artefactos compilados",
+      "required": ["remote"],
+      "properties": {
+        "remote": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https?://"
+        },
+        "token": { "type": "string" },
+        "push": { "type": "boolean", "default": false }
+      }
+    },
     "tasks": {
       "type": "object",
       "description": "Tareas personalizadas",
       "additionalProperties": {
         "type": "object",
+        "additionalProperties": false,
         "required": ["command"],
         "properties": {
           "command": {
