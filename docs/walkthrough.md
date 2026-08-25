@@ -1,4 +1,6 @@
-# 🔥 FORGE — Walkthrough del Proyecto
+# 🔥 FORGE — Walkthrough inicial (histórico)
+
+> Este recorrido documenta el primer prototipo. Para las funciones, límites y comandos vigentes en `0.11.0`, consulta el [README](../README.md) y la [guía rápida](../QUICKSTART.md).
 
 ## Resumen
 

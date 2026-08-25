@@ -3,26 +3,34 @@
 
 ## [Unreleased]
 
+## [0.11.0] — 2026-08-25
+
+### Added
+
+- Repositorio CAS global e inmutable en `~/.forge/repository/cas`, con deduplicación entre proyectos mediante hardlinks y copia como alternativa.
+- Resolución de classpath para dependencias locales `path:` y estructuras de salida compatibles de proyectos externos.
+- Comandos `forge cache status` y `forge cache prune` para inspeccionar y depurar el CAS global.
+- Dashboard con métricas reales del proyecto, eventos de compilación por SSE y servidor restringido a localhost.
+- SBOM CycloneDX, checksums SHA-256 y procedencia firmada para los artefactos de release.
+
 ### Security
+
 - Validación estricta de `forge.toml`, rutas, coordenadas Maven/PyPI y grafos de tareas; el LSP usa las mismas reglas que la CLI.
 - Restauración de caché remota aislada en staging, con límites de descarga/extracción y rechazo de traversal, enlaces y archivos no regulares.
 - Descargas Maven, PyPI y JUnit con timeout, redirecciones limitadas, límites de tamaño y validación básica de artefactos.
 - Artefactos Maven y POM verificados contra SHA-256 publicado o SHA-1 legado cuando Central no ofrece uno más fuerte; JUnit está fijado a un SHA-256 conocido.
 - Dashboard limitado a localhost con cabeceras de seguridad; dependencias Rust y npm actualizadas sin avisos conocidos en las auditorías.
 - CI reproducible con `npm ci`, auditorías bloqueantes, SBOM CycloneDX, checksums de releases y procedencia firmada mediante GitHub/Sigstore.
+- Instaladores oficiales con verificación del checksum publicado antes de extraer o instalar el binario.
 
 ### Fixed
+
 - La caché de compilación ahora se invalida por configuración, perfil, plataforma y cambios en dependencias locales `path:`.
 - Las tareas personalizadas respetan `depends-on`, detectan ciclos y propagan correctamente los errores.
 - Los fallos de sintaxis y de `pytest` ya no se reportan como compilaciones o pruebas exitosas.
 - La telemetría y el dashboard distinguen éxito, error, caché local y caché remota sin métricas simuladas.
-
-## [0.11.0] — 2026-02-26
-
-### Added
-- **Global CAS Repository (Content-Addressable Storage)**: Transición absoluta a un almacenamiento global inmutable (`~/.forge/repository/cas`). Descarga módulos Maven/PyPI referenciados por su Hash SHA-256 deduplicando dependencias binarias exactas a través del sistema.
-- **Zero-Copy Fetching (Hardlinks)**: FORGE abandona la copia de redundancia. Los subdirectorios locales de proyecto (`.forge/deps`) ahora enlazan $O(1)$ atómicamente al host CAS Global economizando Gigabytes de disco y agilizando las instalaciones masivas a cero-milisegundos.
-- **Resolución de Classpath Híbrido**: Soporte nativo para inferir auto-mágicamente la compatibilidad `path:` sobre estructuras de carpetas pre-existentes no compiladas bajo Forge (ej. importando en caliente librerías Gradle/Maven externas que contengan `build/classes/java` u homónimos sin reescribir manifiestos).
+- Las plantillas Java/Kotlin vuelven a usar JUnit Jupiter `5.12.0`, compatible con el runner JUnit Platform `1.12.0` incluido por FORGE.
+- Se retiró el prototipo de plugins WebAssembly que no estaba conectado al producto ni compilaba como parte del workspace.
 
 ## [0.10.0] — 2026-02-25
 

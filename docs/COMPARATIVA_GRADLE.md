@@ -1,47 +1,32 @@
-# ⚔️ Comparativa Arquitectónica y Genética: FORGE vs Gradle (Inicios)
+# FORGE y Gradle: alcance y decisiones de diseño
 
-Al proyectar FORGE hacia un alcance público, es inevitable compararlo con **Gradle**, el titán actual del ecosistema JVM. Comprender por qué Gradle triunfó sobre Maven (y Ant) nos enseña qué vacíos viene a llenar FORGE en la ingeniería de software moderna frente a un Gradle ya maduro.
+Gradle es una plataforma madura del ecosistema JVM, con un modelo extensible, plugins, toolchains, publicación y compatibilidad con builds empresariales. FORGE `0.11` es un proyecto joven que explora una alternativa más pequeña para Java, Kotlin y Python.
 
----
+Esta comparación describe decisiones arquitectónicas; no afirma superioridad de rendimiento. Cualquier cifra de tiempo o memoria debe provenir de benchmarks reproducibles sobre el mismo proyecto y equipo.
 
-## 🏗️ 1. Los Inicios: Por qué nació Gradle (2007)
+| Aspecto | Gradle | FORGE 0.11 |
+|---|---|---|
+| Runtime | JVM y Gradle Daemon | Binario nativo escrito en Rust |
+| Configuración | DSL Groovy/Kotlin | TOML declarativo y estricto |
+| Ecosistema | Amplio catálogo de plugins | Sin sistema público de plugins |
+| Lenguajes principales | Ecosistema JVM y plugins | Java, Kotlin y Python integrados |
+| Dependencias JVM | Modelo maduro, repositorios y metadatos completos | Maven Central con un subconjunto del modelo POM |
+| Tareas | Grafo altamente extensible | DAG acotado, hooks y comandos personalizados |
+| Caché local | Caché de build y dependencias | Caché incremental y CAS global |
+| Caché remota | Caché de build configurable | Protocolo HTTP(S) simple para archivos `tar.gz` |
+| IDE | Integraciones maduras | Generadores iniciales, JSON Schema y LSP |
+| Observabilidad | Build scans y herramientas del ecosistema | Dashboard local y eventos SSE |
 
-Gradle nació entre 2007 y 2008 fundado por Hans Dockter para resolver los problemas rígidos de **Apache Maven** y **Apache Ant**.
-* **Maven** usaba XML declarativo estricto. Si querías salirte del estándar (ej: generar código autogenerado antes de compilar), tenías que escribir laboriosos *Plugins* en Java e inyectarlos.
-* **Ant** era puramente imperativo pero inmanejable: cada build script era un código spaghetti de tareas entrelazadas sin convención.
+## Qué intenta simplificar FORGE
 
-**La solución de Gradle:** Inyectar un lenguaje real (**Groovy**) sobre un modelo de tareas (DAG - Directed Acyclic Graph). Gradle convenció al mundo diciendo: *"Acá tienes convenciones out-of-the-box (como Maven), pero si necesitas hackear el build, tienes el poder de un script Groovy para reescribirlo a tu antojo"*.
+- Un conjunto pequeño de comandos consistentes entre tres lenguajes.
+- Configuración declarativa que rechaza claves desconocidas.
+- Binario único para el motor, la CLI y el dashboard local.
+- Caché compartida entre proyectos mediante contenido SHA-256.
+- Controles de integridad y límites de extracción/descarga incluidos en el motor.
 
----
+## Qué todavía no reemplaza
 
-## 💣 2. La Deuda Técnica Actual de Gradle
+FORGE no implementa el modelo efectivo completo de Maven, perfiles avanzados, publicación de artefactos, toolchains equivalentes, variantes complejas, catálogo de plugins ni la amplitud de integraciones de Gradle. Para proyectos JVM grandes o builds que dependan de plugins, Gradle continúa siendo la opción más completa.
 
-Con los años, la gran fortaleza de Gradle (Groovy/Kotlin como scripting para el build) se volvió su condena arquitectónica para bases de código gigantes:
-1. **Lentitud de Arranque (Bootstrapping)**: Para siquiera *saber* qué tareas ejecutar (Configuration Phase), Gradle tiene que levantar una `JVM` (Java Virtual Machine), luego parsear y ejecutar scripts en Groovy/Kotlin. Solo arrancar toma cientos de milisegundos a varios segundos.
-2. **Consumo de Memoria Demencial**: El famoso `Gradle Daemon` es un proceso Java secundario que vive permanentemente en segundo plano tragando de 1GB a 3GB de memoria RAM solo para mitigar la lentitud del arranque de la máquina virtual (JVM).
-3. **Impredecibilidad / Mutabilidad**: Como el build script es un script "Turing Complete", los plugins interfieren entre sí. El orden en el que se aplican los `apply plugin:` cambia drásticamente el resultado final de compilación.
-
----
-
-## 🔥 3. Cómo responde FORGE (2026)
-
-**FORGE** adopta las valiosas lecciones estructurales de Gradle (el Grafo de Tareas DAG, caché incremental), pero revierte las decisiones de deuda técnica aprovechando 15 años de avance en Ingeniería de Sistemas operacionales y Lenguajes Rust/WASM.
-
-| Característica | **Gradle (Actual)** | **FORGE (v0.6+)** | **Ventaja Evolutiva FORGE** |
-| :--- | :--- | :--- | :--- |
-| **Idioma Base (Core)** | Java (Lento, usa VM) | **Rust** (Nativo, AOT) | Arranca en < 1 milisegundo. No necesita un demonio devorador de memoria en background para correr rápido. |
-| **Sintaxis de Build** | Groovy o Kotlin (Scripts dinámicos) | **TOML + Strict Schema** | Al ser declarativo (TOML), el parsing es determinista. No hay colisión de estado global; lo que lees, es lo que ocurre. |
-| **Estrategia Extensiva (Plugins)** | Compilar JARs e inyectarlos localmente al classpath global. | **WebAssembly (`.wasm`) Vía Extism** | Los plugins vienen compilados a WASM. Corren en Sandbox, no pueden leer memoria inyectada que FORGE no decida. ¡Puedes escribir plugins del build en *TypeScript, C++ o Go*! |
-| **Análisis de Impacto (Caché)** | Snapshotting in-memory y Hash Files | **Hashing SHA-256 Nativo + Local Storage** | Cálculo concurrente I/O ultrarrápido utilizando librerías crypto estándar de Rust limitadas a hilos físicos. |
-| **Caché Distribuido/Remoto** | Gradle Enterprise (De pago, privativo) | **S3/HTTP (Nativo y FOSS)** | FORGE distribuye hashes vía tar.gz comprimidos usando configuraciones públicas, gratis para equipos remotos y CI/CD. |
-
----
-
-## 🎯 Conclusión Histórica
-
-Gradle superó a Maven en el 2008 dándole "Libertad de código" a los desarrolladores dentro de sus builds (Groovy). 
-Sin embargo, en 2026, sabemos que esa libertad muta el determinismo de la compilación y crea monstruos de lentitud.
-
-**FORGE gana el futuro volviendo a la estricta declaración determinista (como quería Maven), PERO solucionando la necesidad de extensibilidad de la gente a través de `Plugins WebAssembly` (Aislados, súper veloces, seguros, universales).** 
-
-Tu build.gradle de 20 segundos para un `"Hello World"` se transforma en un build en FORGE de unos cientos de milisegundos.
+La dirección de FORGE es mantener un núcleo pequeño y verificable. Una futura extensibilidad por plugins requiere antes definir capacidades, permisos, autenticidad de módulos y aislamiento; el prototipo WebAssembly anterior no formaba parte del producto y fue retirado en `0.11.0`.

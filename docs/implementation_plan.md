@@ -1,4 +1,6 @@
-# 🔥 FORGE — Build System de Nueva Generación
+# 🔥 FORGE — Plan inicial (histórico)
+
+> Este documento conserva el plan original y puede describir fases o ideas que cambiaron. Para el estado real de `0.11.0`, consulta el [README](../README.md), el [changelog](../CHANGELOG.md) y el código.
 
 Un sucesor moderno de Gradle, escrito en **Rust**, diseñado para ser rápido, simple y extensible. Soporta **Java**, **Kotlin** y **Python** de forma nativa.
 

@@ -1,175 +1,123 @@
-# 🤝 Guía de Contribución — FORGE
+# Contribuir a FORGE
 
-¡Gracias por tu interés en contribuir a FORGE! 🔥
+Gracias por ayudar a mejorar FORGE. El proyecto acepta correcciones, pruebas, documentación y propuestas acotadas.
 
-Este documento te guiará a través del proceso para contribuir al proyecto.
+## Antes de empezar
 
----
+- Usa Rust estable y Git.
+- Instala Node.js 22 para modificar el dashboard.
+- Instala JDK, Kotlin o Python solo si vas a probar ese backend.
+- Para vulnerabilidades, sigue [SECURITY.md](SECURITY.md) y no abras un issue público con detalles explotables.
 
-## 📋 Requisitos Previos
+En cambios grandes, abre primero un issue para acordar alcance y compatibilidad. Las correcciones pequeñas pueden ir directamente en un pull request bien explicado.
 
-- **Rust 1.75+** — [Instalar con rustup](https://rustup.rs)
-- **Git** — Para clonar y gestionar el código
-- **Java 17-25** (opcional) — Para probar el módulo Java ([Descargar](https://adoptium.net/))
-- **Kotlin 2.1+** (opcional) — Para probar el módulo Kotlin ([Descargar](https://kotlinlang.org/))
-- **Python 3.10-3.14** (opcional) — Para probar el módulo Python ([Descargar](https://python.org))
-
----
-
-## 🚀 Configurar el Entorno
+## Preparar el repositorio
 
 ```bash
-# 1. Fork del repositorio en GitHub
-
-# 2. Clonar tu fork
 git clone https://github.com/enri312/forge.git
 cd forge
 
-# 3. Compilar el proyecto
-cargo build
-
-# 4. Ejecutar tests
+cargo build --workspace
 cargo test --workspace
-
-# 5. Ejecutar FORGE localmente
-cargo run -- --help
 ```
 
----
-
-## 📁 Estructura del Proyecto
-
-```
-forge/
-├── Cargo.toml           ← Workspace raíz
-├── README.md            ← Documentación principal
-├── CONTRIBUTING.md      ← Esta guía
-├── LICENSE              ← Licencia MIT
-│
-├── crates/
-│   ├── forge-cli/       ← CLI (punto de entrada)
-│   │   └── src/
-│   │       ├── main.rs      ← Funciones Core (build, run, test)
-│   │       ├── ide.rs       ← Integración IDE (VS Code, IntelliJ)
-│   │       ├── hooks.rs     ← Ejecución de pre/post actions 
-│   │       ├── add.rs       ← Inyector de TOML (forge add)
-│   │       ├── tree.rs      ← UI de dependencias (forge tree)
-│   │       ├── fmt.rs       ← Formateadores
-│   │       └── lint.rs      ← Linter estático
-│   │
-│   ├── forge-core/      ← Motor principal
-│   │   └── src/
-│   │       ├── config.rs    ← Parser forge.toml
-│   │       ├── dag.rs       ← Grafo de tareas
-│   │       ├── executor.rs  ← Ejecutor paralelo
-│   │       ├── cache.rs     ← Caché incremental
-│   │       └── error.rs     ← Tipos de error
-│   │
-│   ├── forge-langs/     ← Módulos de lenguaje
-│   │   └── src/
-│   │       ├── java.rs      ← Compilación Java
-│   │       ├── kotlin.rs    ← Compilación Kotlin
-│   │       └── python.rs    ← Gestión Python
-│   │
-│   └── forge-deps/      ← Resolución de dependencias
-│       └── src/
-│           ├── maven.rs     ← Maven Central
-│           └── pypi.rs      ← PyPI
-│
-└── tests/               ← Proyectos de prueba
-    ├── java_project/
-    ├── kotlin_project/
-    └── python_project/
-```
-
----
-
-## 🔧 Flujo de Contribución
-
-### 1. Crear un Issue
-
-Antes de empezar a trabajar en algo, crea un issue describiendo:
-- **Qué** quieres cambiar
-- **Por qué** es necesario
-- **Cómo** planeas implementarlo
-
-### 2. Crear una Branch
+El dashboard se compila y queda embebido en la CLI:
 
 ```bash
-git checkout -b feature/mi-nueva-funcionalidad
+cd forge-dashboard
+npm ci
+npm run build
+cd ..
+
+cargo build --workspace
 ```
 
-### 3. Hacer tus Cambios
-
-- Escribe código limpio y documentado
-- Agrega tests para la nueva funcionalidad
-- Asegúrate de que todos los tests pasan: `cargo test --workspace`
-
-### 4. Commit y Push
+La extensión de VS Code se valida por separado:
 
 ```bash
-git add .
-git commit -m "feat: agregar soporte para XYZ"
-git push origin feature/mi-nueva-funcionalidad
+cd editors/vscode
+npm ci
+npm run compile
 ```
 
-### 5. Crear un Pull Request
+## Estructura
 
-1. Ve a tu fork en GitHub
-2. Crea un Pull Request hacia `main`
-3. Describe tus cambios con detalle
-4. Espera la revisión
+```text
+crates/
+├── forge-cli/    comandos y servidor del dashboard
+├── forge-core/   configuración, DAG, caché, ejecución y telemetría
+├── forge-deps/   Maven Central y PyPI
+├── forge-langs/  Java, Kotlin, Python y pruebas
+└── forge-lsp/    servidor LSP para forge.toml
 
----
-
-## 📝 Convenciones de Código
-
-### Mensajes de Commit
-
-Usamos [Conventional Commits](https://www.conventionalcommits.org/):
-
-```
-feat: agregar soporte para TypeScript
-fix: corregir detección de ciclos en DAG
-docs: actualizar README con nuevos ejemplos
-refactor: simplificar lógica del ejecutor
-test: agregar tests para caché incremental
+forge-dashboard/  frontend React/Vite
+editors/vscode/   extensión de VS Code
+schemas/          JSON Schema de forge.toml
+tests/            proyectos de integración manual
 ```
 
-### Estilo de Código Rust
+## Validación obligatoria
 
-- Usar `cargo fmt` antes de commitear
-- Pasar `cargo clippy` sin warnings
-- Documentar funciones públicas con `///`
-- Tests dentro de cada módulo con `#[cfg(test)]`
+Antes de enviar cambios Rust:
 
----
+```bash
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets --all-features -- -D warnings
+cargo test --workspace
+cargo audit
+```
 
-## 🎯 Áreas donde Necesitamos Ayuda
+Para el dashboard:
 
-### 🟢 Principiante (Good First Issue)
-- Crear nuevas plantillas para `forge new` (Ej. frameworks web, microservicios)
-- Mejorar mensajes de error con sugerencias (`error.rs`)
-- Agregar más tests E2E
-- Mejorar la documentación en The Docs y ejemplos
+```bash
+cd forge-dashboard
+npm ci
+npm run typecheck
+npm run build
+npm audit --audit-level=high
+```
 
-### 🟡 Intermedio
-- Nuevo módulo para gestionar tareas con Docker
-- Nuevo módulo de lenguaje nativo (Ej. Go, TypeScript, C++, Rust)
-- Soporte para Test Coverage integrado (Jacoco, PyTest-Cov)
-- Implementar la lógica completa de parsing para `forge upgrade`
+Para la extensión:
 
-### 🔴 Avanzado
-- Sistema de plugins dinámicos y Scripts pre/post escritos en Rust
-- Servidor LSP (Language Server Protocol) para validación de TOML en tiempo real
-- Caché remoto y Builds Distribuidos
-- Cross-Compilation (Compilación cruzada) desde Windows Host a Linux Targets
+```bash
+cd editors/vscode
+npm ci
+npm run compile
+npm audit --audit-level=high
+```
 
----
+La CI repite estas verificaciones en Linux, macOS y Windows. No reduzcas una comprobación bloqueante para hacer pasar un cambio; corrige la causa o documenta por qué debe cambiar la política.
 
-## ❓ ¿Preguntas?
+## Reglas de diseño
 
-- Abre un [Issue en GitHub](https://github.com/enri312/forge/issues)
-- Únete a las discusiones del proyecto
+- Mantén `forge.toml` estricto: toda clave nueva debe existir en los tipos Rust, el JSON Schema, las plantillas y la documentación.
+- Valida rutas antes de crear, extraer, mover o borrar archivos.
+- Toda descarga debe tener timeout, límite de tamaño, redirecciones limitadas y verificación de integridad cuando el repositorio publique un digest.
+- Propaga los códigos de salida: una compilación, prueba, hook o tarea fallida no puede reportarse como exitosa.
+- No añadas telemetría externa ni expongas el dashboard fuera de localhost sin una propuesta explícita de seguridad y privacidad.
+- Añade pruebas de regresión para validación, grafos, caché y parsers.
+- Evita métricas de rendimiento en la documentación si no provienen de un benchmark reproducible.
 
-¡Gracias por ayudar a forjar el futuro del build tooling! 🔥🦀
+## Commits y pull requests
+
+Usa mensajes breves y descriptivos, por ejemplo:
+
+```text
+fix: reject symlinks in remote cache archives
+feat: add Kotlin compiler option
+docs: document remote cache protocol
+```
+
+El pull request debe incluir:
+
+- problema y solución;
+- riesgos o incompatibilidades;
+- pruebas ejecutadas;
+- capturas si modifica el dashboard;
+- documentación y changelog cuando el comportamiento público cambia.
+
+## Releases
+
+Las releases se generan al publicar un tag `v*`. El workflow compila los targets soportados, publica SHA-256 y genera una atestación de procedencia. Solo los mantenedores deben crear tags oficiales.
+
+Al contribuir aceptas que tu código se distribuya bajo la [licencia MIT](LICENSE).

@@ -1,297 +1,253 @@
 <div align="center">
-  <img src="assets/forge-logo-dark.png" alt="Forge Build System Logo" width="350"/>
-  <h1>🔥 FORGE — The Next-Gen Cargo-like Build System</h1>
+  <img src="assets/forge-logo-dark.png" alt="FORGE Build System" width="360">
+
+  # FORGE Build System
+
+  **Builds reproducibles para Java, Kotlin y Python, con una configuración TOML y un motor nativo en Rust.**
+
+  [![CI](https://github.com/enri312/forge/actions/workflows/ci.yml/badge.svg)](https://github.com/enri312/forge/actions/workflows/ci.yml)
+  [![Latest release](https://img.shields.io/github/v/release/enri312/forge)](https://github.com/enri312/forge/releases/latest)
+  [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
+  [![Rust](https://img.shields.io/badge/Rust-stable-orange.svg)](https://www.rust-lang.org/)
 </div>
 
-<div align="center">
+## Qué es
 
-<img src="assets/forge-icon.svg" width="120" alt="FORGE Logo">
+FORGE es un build system de código abierto orientado a proyectos Java, Kotlin y Python. Su objetivo es ofrecer un flujo sencillo —`forge build`, `forge run`, `forge test`— sin obligar a escribir XML ni un DSL ejecutable.
 
-```
-   ███████╗ ██████╗ ██████╗  ██████╗ ███████╗
-   ██╔════╝██╔═══██╗██╔══██╗██╔════╝ ██╔════╝
-   █████╗  ██║   ██║██████╔╝██║  ███╗█████╗  
-   ██╔══╝  ██║   ██║██╔══██╗██║   ██║██╔══╝  
-   ██║     ╚██████╔╝██║  ██║╚██████╔╝███████╗
-   ╚═╝      ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝
-```
+La versión `0.11.0` incluye:
 
-**Un build system moderno, rápido y simple. Escrito en Rust 🦀**
+- compilación, ejecución, pruebas, empaquetado, watch mode, formato y lint por lenguaje;
+- dependencias de Maven Central y PyPI, incluidas dependencias Maven transitivas directas;
+- builds incrementales cuya clave contempla fuentes, configuración, perfil, plataforma y dependencias locales;
+- workspaces multi-módulo con orden topológico y detección de ciclos;
+- repositorio CAS global en `~/.forge/repository/cas`, con deduplicación mediante enlaces duros cuando el sistema lo permite;
+- caché remota HTTP(S) opcional, restaurada en un área aislada y validada antes de reemplazar el build local;
+- dashboard local con eventos SSE, JSON Schema, LSP e integración para VS Code/IntelliJ;
+- validación estricta de configuración, rutas, coordenadas de dependencias y grafos de tareas.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Rust](https://img.shields.io/badge/Rust-1.75+-orange.svg)](https://www.rust-lang.org/)
-[![Java](https://img.shields.io/badge/Java-17--25-red.svg)](#)
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.1+-purple.svg)](#)
-[![Python](https://img.shields.io/badge/Python-3.10--3.14-blue.svg)](#)
+> FORGE sigue siendo software `0.x`. Es funcional y está cubierto por CI en Linux, macOS y Windows, pero todavía no pretende cubrir todo el modelo de Gradle o Maven. Consulta [Estado y límites](#estado-y-límites) antes de migrar un build crítico.
 
-</div>
+## Instalación
 
----
+Los instaladores descargan la última release compatible y verifican su checksum SHA-256 publicado.
 
-## 🤔 ¿Qué es FORGE?
-
-**FORGE** es un build system de nueva generación diseñado para reemplazar a Gradle con un enfoque más simple, rápido y multi-lenguaje. Escrito en Rust, arranca instantáneamente y consume mínima memoria.
-
-### ¿Por qué FORGE en lugar de Gradle?
-
-| Problema de Gradle | Solución de FORGE |
-|---|---|
-| 🐢 Arranque lento (JVM) | ⚡ Binario nativo — arranque instantáneo |
-| 💾 Alto consumo de memoria | 🪶 Rust: mínima memoria, sin GC |
-| 📚 Configuración compleja (Groovy/Kotlin DSL) | 📄 TOML simple y legible |
-| 🤯 Difícil de depurar | 💬 Mensajes de error claros |
-| 📈 Curva de aprendizaje alta | 🎯 Convención sobre configuración |
-| ☕ Solo JVM nativo | 🌐 Java + Kotlin + Python desde el inicio |
-| 📦 Cachés de red redundantes y lentas | 💎 CAS Global y Zero-Copy (Enlaces Duros $0$ Bytes) |
-
----
-
-## 🚀 Inicio Rápido
-
-### 1. Instalar FORGE
+### Linux y macOS
 
 ```bash
-# Para sistemas UNIX (Linux / macOS)
 curl -fsSL https://raw.githubusercontent.com/enri312/forge/main/install.sh | bash
+```
 
-# Para sistemas Windows (PowerShell)
+Binarios disponibles: Linux x86_64 y macOS x86_64/aarch64.
+
+### Windows PowerShell
+
+```powershell
 iwr https://raw.githubusercontent.com/enri312/forge/main/install.ps1 -useb | iex
-
-# Instalación vía Cargo Native (requiere Rust)
-cargo install cyrce-forge-cli
 ```
 
-### 2. Crear un Proyecto
+Binario disponible: Windows x86_64.
+
+### Desde el código fuente
+
+Requiere Rust estable:
 
 ```bash
-# Crear proyecto en carpeta nueva
+git clone https://github.com/enri312/forge.git
+cd forge
+cargo install --path crates/forge-cli
+```
+
+Para instalar exactamente la release `v0.11.0` desde Git:
+
+```bash
+cargo install --git https://github.com/enri312/forge.git --tag v0.11.0 cyrce-forge-cli
+```
+
+Verifica el entorno del lenguaje que utilizarás:
+
+```bash
+forge --version
+forge doctor
+```
+
+## Inicio rápido
+
+```bash
+# java, kotlin o python
 forge new mi-app -l java
-forge new mi-app -l kotlin
-forge new mi-app -l python
+cd mi-app
 
-# O inicializar en el directorio actual
-forge init java
+forge build
+forge run
+forge test
 ```
 
-### 3. Compilar y Ejecutar
+También puedes ejecutar `forge init java` dentro de una carpeta existente. La [guía de inicio rápido](QUICKSTART.md) contiene ejemplos de tareas, workspaces, caché y dashboard.
 
-```bash
-forge build    # Compilar
-forge run      # Compilar y ejecutar
-forge test     # Ejecutar tests
-forge clean    # Limpiar artefactos
-```
+## Configuración
 
-### 4. Verificar tu Sistema
-
-```bash
-forge doctor   # Diagnóstico completo del sistema
-```
-
----
-
-## 📄 Configuración (`forge.toml`)
-
-FORGE usa un archivo `forge.toml` simple y legible en la raíz de tu proyecto:
-
-### Proyecto Java
+FORGE lee `forge.toml` desde la raíz del proyecto. Este ejemplo Java usa claves aceptadas por el [JSON Schema](schemas/forge.schema.json):
 
 ```toml
+modules = ["core", "api"]
+
 [project]
 name = "mi-app"
 version = "1.0.0"
 lang = "java"
+java-version = "21"
+output_dir = "build"
 
 [java]
 source = "src/main/java"
 test-source = "src/test/java"
-target = "17"
+target = "21"
 main-class = "com.ejemplo.Main"
 
 [dependencies]
-"com.google.guava:guava" = "33.0.0-jre"
-"org.slf4j:slf4j-api" = "2.0.9"
+"com.google.guava:guava" = "33.4.8-jre"
 
 [test-dependencies]
-"org.junit.jupiter:junit-jupiter-api" = "6.0.3"
-"org.junit.jupiter:junit-jupiter-engine" = "6.0.3"
+"org.junit.jupiter:junit-jupiter-api" = "5.12.0"
 
-[tasks.lint]
-command = "echo Linting..."
-description = "Verificar estilo de código"
+[hooks]
+pre-build = ["echo Preparando build"]
+
+[tasks.verify]
+command = "forge test"
+description = "Ejecutar verificaciones"
+
+[tasks.package]
+command = "forge package"
+depends-on = ["verify"]
+description = "Verificar y empaquetar"
 ```
 
-### Proyecto Kotlin
+Las claves `modules`, `dependencies`, `test-dependencies`, `hooks`, `tasks` y `cache` son de nivel superior. Cada entrada de `modules` apunta a una carpeta con su propio `forge.toml`.
+
+### Kotlin
 
 ```toml
 [project]
 name = "mi-app-kotlin"
-version = "1.0.0"
 lang = "kotlin"
 
 [kotlin]
 source = "src/main/kotlin"
-jvm_target = "17"
+test-source = "src/test/kotlin"
+jvm_target = "21"
 main-class = "MainKt"
-
-[dependencies]
-"org.jetbrains.kotlinx:kotlinx-coroutines-core" = "1.8.0"
 ```
 
-### Proyecto Python
+### Python
 
 ```toml
 [project]
 name = "mi-script"
-version = "1.0.0"
 lang = "python"
 
 [python]
 source = "src"
 main-script = "main.py"
+python_version = "3.12"
 
 [dependencies]
-"requests" = "2.31.0"
-"flask" = "*"
+requests = "2.32.5"
 ```
 
----
+### Caché remota
 
-## 📦 Comandos Disponibles (21)
+El servidor debe aceptar `GET` y, si `push = true`, `PUT` sobre `/<clave>.tar.gz`. Usa HTTPS si configuras un token; HTTP con token solo se permite en localhost.
 
-### Esenciales
+```toml
+[cache]
+remote = "https://cache.example.com/forge"
+token = "token-del-entorno-seguro"
+push = false
+```
 
-| Comando | Descripción |
+No confirmes tokens reales en Git. Para equipos y CI, genera el archivo desde un almacén de secretos o limita el token a la vida del job.
+
+## Comandos
+
+| Área | Comandos |
 |---|---|
-| `forge init <lang>` | 🆕 Inicializar proyecto en directorio actual |
-| `forge new <nombre> -l <lang>` | 📁 Crear proyecto en carpeta nueva |
-| `forge build` | 🔨 Compilar el proyecto |
-| `forge run` | 🚀 Compilar y ejecutar |
-| `forge test` | 🧪 Ejecutar tests |
-| `forge clean` | 🧹 Limpiar artefactos y caché |
-| `forge deps` | 📦 Resolver dependencias |
-| `forge add <dep>`| ➕ Añadir una dependencia automágicamente |
-| `forge tree` | 🌲 Visualizar árbol de dependencias resueltas |
-| `forge upgrade` | ⬆️ Actualizar versiones de dependencias declaradas |
-| `forge ide <target>` | 🛠️ Generar metadatos IDE (`vscode` / `intellij`) |
-
-### Desarrollo
-
-| Comando | Descripción |
-|---|---|
-| `forge watch` | 👁️ Auto-rebuild al detectar cambios en código |
-| `forge task <nombre>` | ⚙️ Ejecutar tarea personalizada del `forge.toml` |
-| `forge bench` | ⏱️ Benchmark: medir tiempos de compilación |
-| `forge package` | 📦 Empaquetar proyecto para distribución |
-| `forge fmt` | 🎨 Formatear código (google-java-format, ktlint, black) |
-| `forge lint` | 🔍 Análisis estático (checkstyle, detekt, ruff) |
-
-### Información
-
-| Comando | Descripción |
-|---|---|
-| `forge info` | ℹ️ Info del proyecto + herramientas del sistema |
-| `forge stats` | 📊 Estadísticas: archivos, líneas, tamaño |
-| `forge doctor` | 🩺 Diagnóstico completo del sistema |
-| `forge completions <shell>` | 🐚 Autocompletado para bash/zsh/fish/PowerShell |
-
-### Opciones Globales
+| Proyecto | `init`, `new`, `build`, `run`, `test`, `clean`, `package` |
+| Dependencias | `deps`, `add`, `upgrade`, `tree` |
+| Desarrollo | `watch`, `task`, `fmt`, `lint`, `bench` |
+| Diagnóstico | `info`, `doctor`, `stats` |
+| Herramientas | `completions`, `ide`, `dashboard`, `cache` |
 
 ```bash
-forge --verbose build      # Modo verboso
-forge build --release      # Modo de compilación optimizado
-forge -p /otra/ruta build  # Especificar directorio del proyecto
-forge --help               # Ver ayuda
-forge --version            # Ver versión
+forge --help
+forge build --release
+forge -p /ruta/al/proyecto build
+forge dashboard --port 3000
+forge cache status
+forge cache prune
 ```
 
----
+`forge dashboard` solo escucha en `127.0.0.1` y muestra datos reales del proyecto y eventos de compilación. `forge upgrade` es beta y actualmente actualiza dependencias PyPI.
 
-## 🏗️ Arquitectura
+## Arquitectura
 
-FORGE está construido con una arquitectura modular:
+```text
+crates/
+├── forge-cli/    CLI, comandos y servidor local del dashboard
+├── forge-core/   configuración, DAG, ejecutor, caché y telemetría
+├── forge-deps/   resolución Maven Central y PyPI
+├── forge-langs/  Java, Kotlin, Python y runners de pruebas
+└── forge-lsp/    diagnósticos LSP para forge.toml
 
+forge-dashboard/  frontend React/Vite embebido en la CLI
+editors/vscode/   extensión y tema de iconos para VS Code
+schemas/          JSON Schema de forge.toml
 ```
-forge/
-├── forge-cli    → Interfaz de línea de comandos (clap)
-├── forge-core   → Motor: DAG, ejecutor paralelo, caché
-├── forge-langs  → Módulos: Java, Kotlin, Python
-├── forge-deps   → Resolución: Maven Central, PyPI
-└── editors/     → Extensiones oficiales (Ej. vscode)
+
+## Seguridad y cadena de suministro
+
+- Las descargas aplican timeouts, límites de redirección/tamaño y validación del formato esperado.
+- Maven y sus POM se verifican con el SHA-256 publicado; se acepta SHA-1 únicamente cuando Maven Central no publica SHA-256. El runner JUnit usa un SHA-256 fijado.
+- Los archivos de caché remota se extraen en staging con límites y rechazo de traversal, enlaces y entradas no regulares.
+- CI ejecuta pruebas, formato, Clippy estricto, auditorías Rust/npm y genera un SBOM CycloneDX.
+- Cada release publica checksums SHA-256 y procedencia firmada mediante GitHub Artifact Attestations/Sigstore.
+
+Reporta vulnerabilidades de forma privada siguiendo [SECURITY.md](SECURITY.md). No abras un issue público con detalles explotables.
+
+## Estado y límites
+
+- El resolver Maven cubre coordenadas declaradas y transitividad de POM hasta una profundidad limitada; aún no implementa todo el modelo efectivo de Maven, perfiles ni la semántica completa de `dependencyManagement`.
+- La caché remota usa un protocolo HTTP(S) simple; FORGE no incluye el servidor ni un adaptador S3 nativo.
+- La deduplicación por hardlink depende del sistema de archivos; FORGE usa copia como alternativa cuando no es posible enlazar.
+- El LSP y la extensión de VS Code son iniciales.
+- El sistema de plugins WebAssembly todavía no forma parte del producto público.
+- No existen aún paquetes oficiales de Homebrew o Scoop. La versión publicada en crates.io puede quedar detrás de GitHub Releases.
+
+## Versiones
+
+- `v0.11`: CAS global, classpath local híbrido, claves de caché completas y endurecimiento de seguridad/cadena de suministro.
+- `v0.10`: classifiers Maven.
+- `v0.9`: workspaces multi-módulo y dependencias locales.
+- `v0.6–v0.8`: caché remota, LSP, dashboard y telemetría SSE.
+- `v0.1–v0.5`: motor base, lenguajes, testing, IDE, hooks y herramientas de desarrollo.
+
+El historial detallado está en [CHANGELOG.md](CHANGELOG.md).
+
+## Desarrollo y contribuciones
+
+```bash
+cargo test --workspace
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets --all-features -- -D warnings
 ```
 
-### Características Técnicas
+Consulta [CONTRIBUTING.md](CONTRIBUTING.md) para preparar el dashboard, la extensión y las pruebas de cada lenguaje.
 
-- **⚡ Ejecución Paralela**: Las tareas sin dependencias se ejecutan simultáneamente usando un grafo DAG
-- **💾 Caché Incremental**: Solo recompila archivos que han cambiado (hashing SHA-256)
-- **📦 Dependencias Automáticas**: Descarga JARs de Maven Central y paquetes de PyPI con **resolución transitiva** de POMs
-- **🧪 Test Runners Nativos**: Integra pytest y auto-descarga global de JUnit Platform Console Standalone para ejecutar pruebas nativamente.
-- **🛠️ Compatibilidad IDE**: Generación automática de setups con `forge ide` y bundle interactivo para VS Code.
-- **🪝 Hooks de Ciclo de Vida**: `pre-build`, `post-build`, `pre-test`, `post-test` configurables en `forge.toml`
-- **📦 Multi-Módulo**: Soporte de workspaces con sub-proyectos independientes (`modules = [...]`)
-- **🎨 Formateo y Linting**: `forge fmt` y `forge lint` integran herramientas nativas por lenguaje
-- **👁️ Watch Mode**: Vigila cambios y recompila automáticamente usando file watchers nativos
-- **🩺 System Doctor**: Diagnóstico completo con sugerencias de instalación
-- **📊 Project Stats**: Conteo de archivos, líneas de código y tamaño
-- **⏱️ Benchmarking**: Mide y compara tiempos de compilación
-- **🎨 UX Moderna**: Barras de progreso, colores y mensajes descriptivos
-- **� Shell Completions**: Autocompletado para bash, zsh, fish y PowerShell
-- **�🔌 Extensible**: Arquitectura modular con traits para agregar nuevos lenguajes
+## Licencia
 
----
-
-## 🤝 Contribuir
-
-¡Las contribuciones son bienvenidas! Ver [CONTRIBUTING.md](CONTRIBUTING.md) para detalles.
-
-### Ideas para Contribuir
-
-- 🦀 **Nuevos lenguajes**: C/C++, TypeScript
-- 📦 **Plugin system basados en WebAssembly (WASM)**
--  **Docker support**: Builds nativos en contenedores
-- 📝 **Dashboard Web GUI**: UI gráfica del DAG
-
----
-
-## 📋 Roadmap
-
-- [x] **v0.1.0** — Estructura base, CLI y motor core
-- [x] **v0.1.0** — Compilación Java, Kotlin y Python
-- [x] **v0.1.0** — Resolución de dependencias (Maven Central, PyPI)
-- [x] **v0.1.0** — Caché incremental con SHA-256
-- [x] **v0.1.1** — Watch mode (recompilación automática)
-- [x] **v0.1.1** — Shell completions (bash, zsh, fish, PowerShell)
-- [x] **v0.1.1** — JSON Schema para `forge.toml`
-- [x] **v0.1.1** — `forge doctor`, `forge stats`, `forge bench`
-- [x] **v0.1.1** — `forge new`, `forge task`, `forge package`
-- [x] **v0.1.1** — GitHub Actions CI (Linux, Windows, macOS)
-- [x] **v0.2.0** — Test runners nativos (aislamiento de dependencias de prueba, JUnit Platform Console, virtualenv con pytest e integración CLI)
-- [x] **v0.3.0** — Generador de setups `forge ide` y Extensión básica de VS Code
-- [x] **v0.4.0** — Hooks de ciclo de vida, dependencias transitivas Maven, multi-módulo, `forge fmt` y `forge lint`
-- [x] **v0.5.0** — Caché remoto distribuido por HTTP(S) con subida automática
-- [x] **v0.6.0** — Servidor oficial LSP (Language Server Protocol) para `forge.toml`
-- [x] **v0.7.0** — Dashboard Web Interactivo (Vite/React/Axum) con Server Embebido
-- [x] **v0.8.0** — Telemetría de Compilación en Vivo con Event Bus Global y Server-Sent Events (SSE)
-- [x] **v0.9.0** — Motor Multi-Módulo (DAG, Verificación de Ciclos, Local Paths y Cross-Inyección de Classpaths JVM)
-
-### En desarrollo (Próximamente)
-- [ ] **v1.0.0** — **Fase 17:** Adopción Pública y Plugins (WebAssembly / Extism)
-- [ ] Publicación en `crates.io` y gestores comunitarios (Homebrew, Scoop)
-
----
-
-## 📜 Licencia
-
-Este proyecto está bajo la licencia **MIT**. Ver [LICENSE](LICENSE) para más detalles.
-
----
+FORGE se distribuye bajo la [licencia MIT](LICENSE).
 
 <div align="center">
-
-**Hecho con 🔥 y Rust 🦀 por [SkyShoot](https://github.com/enri312)**
-
-*FORGE es un proyecto de código abierto. ¡Únete a la fragua!*
-
-🌐 [github.com/enri312/forge](https://github.com/enri312/forge)
-
+  Hecho con Rust por <a href="https://github.com/enri312">SkyShoot</a>.
 </div>

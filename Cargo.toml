@@ -73,9 +73,6 @@ cyrce-forge-lsp = { version = "0.11.0", path = "crates/forge-lsp" }
 # Language Server Protocol (LSP)
 tower-lsp = "0.20.0"
 
-# WebAssembly Plugin System (Extism)
-extism = "1.8.0"
-
 # Servidor Web Embebido (Dashboard)
 axum = "0.7"
 rust-embed = "8.4"
