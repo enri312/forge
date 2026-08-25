@@ -35,7 +35,7 @@ jobs:
           components: clippy, rustfmt
 
       - name: 💾 Cache Cargo
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
           path: |
             ~/.cargo/bin/
@@ -131,7 +131,7 @@ jobs:
           npx --yes @cyclonedx/cyclonedx-npm@5.0.0 --package-lock-only --ignore-npm-errors --output-reproducible --output-file ../../sbom/forge-vscode.cdx.json
 
       - name: 📤 Publicar SBOMs
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: forge-sbom-cyclonedx
           if-no-files-found: error
@@ -183,7 +183,7 @@ jobs:
         run: cargo build --release --target ${{ matrix.target }}
 
       - name: 📤 Subir artefacto
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: forge-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/${{ matrix.artifact }}
